@@ -1,11 +1,54 @@
 ---
-title: "BANANA_STATS"
+title: "Banana,US"
+author: "Team 1"
+date: "03/12/2024"
+
+execute:
+  echo: false
+  
+format: 
+  html:
+    math: true
+    toc: true  # Enable the table of contents
+    toc-title: "Contents"  # Set the TOC title
+    toc-depth: 2  # Limit TOC depth level
+    code-fold: true  # Allow code blocks to be collapsible
+    code-tools: false  # Show tools for code blocks (like copy button)
+    code-copy: true  # Enable copy button for code blocks
+    theme: Materia  # Use the "Lux" Bootswatch theme
+    smooth-scroll: true  # Enable smooth scrolling for TOC links
+    embed-resources: true  # Embed external resources directly
 ---
-
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
 ```{r}
-1 + 1
+#| echo: false
+#| message: false
+#| warning: false
+
+# Set a CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com"))
+
+# install.packages('ggplot2')
+# install.packages('ggthemes')
+# install.packages("stargazer")
+# install.packages("wooldridge")
+# install.packages("knitr")
+# install.packages("modelsummary")
+# install.packages("naniar")
+# install.packages("kableExtra")
+# install.packages("lmtest")
+
+library(ggplot2)
+library(ggthemes)
+library(stargazer)
+library(wooldridge)
+library(knitr)
+library(dplyr)
+library(car)
+library(modelsummary)
+library(readxl)
+library(naniar)
+library(kableExtra)
+library(lmtest)
+library(tidyr)
 ```
+
