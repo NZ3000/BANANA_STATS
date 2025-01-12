@@ -36,6 +36,13 @@ options(repos = c(CRAN = "https://cran.rstudio.com"))
 # install.packages("naniar")
 # install.packages("kableExtra")
 # install.packages("lmtest")
+# install.packages("tsibble")
+# install.packages("fable")
+# install.packages("lubridate")
+# install.packages("forecast")
+# install.packages("urca")
+# install.packages("broom")
+# install.packages("plm")
 
 library(ggplot2)
 library(ggthemes)
@@ -50,5 +57,30 @@ library(naniar)
 library(kableExtra)
 library(lmtest)
 library(tidyr)
+library(tsibble)
+library(fable)
+library(lubridate)
+library(forecast)
+library(urca)
+library(broom)
+library(plm)
+library(readr)
+```
+```{r}
+
+banana_tsibble <- read_csv("Cleaned_Commodity_Prices.csv", show_col_types = FALSE) |>
+  select(Year, Month, `Banana, US`) |>  # Keep only relevant columns
+  mutate(Date = yearmonth(paste(Year, Month, sep = "-"))) |>
+  select(Date, `Banana, US`) |>                             
+  as_tsibble(index = Date)
+
+```
+Data 
+```{r}
+autoplot(banana_tsibble, `Banana, US`) +
+  ggtitle("Banana Prices Over Time") +
+  xlab("Date") +
+  ylab("Price (US $)") +
+  theme_minimal()
 ```
 
