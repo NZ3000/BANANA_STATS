@@ -43,6 +43,11 @@ options(repos = c(CRAN = "https://cran.rstudio.com"))
 # install.packages("urca")
 # install.packages("broom")
 # install.packages("plm")
+# install.packages("fabletools")
+# install.packages("lubridate")
+# install.packages("plotly")
+
+
 
 library(ggplot2)
 library(ggthemes)
@@ -58,13 +63,19 @@ library(kableExtra)
 library(lmtest)
 library(tidyr)
 library(tsibble)
-library(fable)
 library(lubridate)
 library(forecast)
 library(urca)
 library(broom)
 library(plm)
 library(readr)
+library(fable)
+library(fabletools)
+library(lubridate)
+library(plotly)
+library(gganimate)
+
+
 ```
 ```{r}
 
@@ -83,4 +94,73 @@ autoplot(banana_tsibble, `Banana, US`) +
   ylab("Price (US $)") +
   theme_minimal()
 ```
+Time Plot description 
+```{r}
+banana_tsibble |>
+  mutate(Month = month(Date, label = TRUE),   # Extract month as a factor
+         Year = year(Date),                   # Extract year
+         Decade = floor(Year / 10) * 10) |>   # Create a decade variable
+  filter(Year %% 3 == 0) |>                   # Select only years divisible by 3
+  ggplot(aes(x = Month, y = `Banana, US`, color = factor(Year), group = Year)) +
+  geom_line() +
+  labs(y = "$ (USD)",
+       title = "Seasonal Plot: Banana Prices in US by Decade (Sampled Years)") +
+  facet_wrap(~ Decade, scales = "fixed", ncol = 2) +  # Two columns for better readability
+  theme_minimal() +
+  theme(legend.position = "none",               # Remove the legend
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+```{r}
+banana_tsibble |>
+  mutate(Month = month(Date, label = TRUE)) |>  # Extract month as a factor
+  group_by(Month) |>                            # Group by month
+  summarise(AveragePrice = mean(`Banana, US`, na.rm = TRUE)) |>  # Calculate average price
+  ggplot(aes(x = Month, y = AveragePrice, group = 1)) +
+  geom_line(color = "blue", linewidth = 1) +      # Use linewidth instead of size
+  geom_point(color = "blue", size = 3) +          # Add points to highlight averages
+  labs(y = "$ (USD)",
+       title = "Average Monthly Banana Prices in US",
+       x = "Month") +
+  theme_minimal()
+```
+Insights
+```{r}
+banana_tsibble |>
+  mutate(Month = month(Date, label = TRUE)) |>  # Extract Month as factor
+  ggplot(aes(x = Month, y = `Banana, US`)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.6) +  # Boxplot
+  stat_summary(fun = mean, geom = "line", aes(group = 1), color = "blue", size = 1) +  # Mean line
+  labs(y = "$/kg", 
+       title = "Boxplot of Banana Prices by Month with Mean Line",
+       x = "Month") +
+  theme_minimal()
+```
+## Insights from the Boxplot:
+
+1. **Price Stability**:
+   - Most boxes have a similar size and position, indicating relatively stable banana prices throughout the year.
+   - There are no sharp changes in medians between months, meaning average banana prices remain at a similar level year-round.
+
+2. **Price Variability**:
+   - The whiskers are quite long, showing significant variability in prices across different years.
+   - The highest variability is observed in **January, June, and September**, as their whiskers are the longest, and there are several outliers.
+
+3. **Outliers**:
+   - Outliers appear in several months, especially in **January, June, and December**, which may indicate extreme banana prices in specific years.
+   - These outliers might be caused by economic or climatic events affecting banana supply during these periods.
+```{r}
+banana_yearly <- banana_tsibble %>%
+  index_by(Year = year(Date)) %>%  # Group by year
+  summarise(Avg_Price = mean(`Banana, US`, na.rm = TRUE))  # Compute yearly average
+
+# Create an interactive plot using plotly
+plot_ly(banana_yearly, x = ~Year, y = ~Avg_Price, type = 'scatter', mode = 'lines+markers') %>%
+  layout(title = "Interactive Time Series Plot: Banana Prices",
+         xaxis = list(title = "Year"),
+         yaxis = list(title = "Price ($/kg)"))
+```
+```{r}
+```
+
+
 
