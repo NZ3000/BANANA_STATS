@@ -75,17 +75,19 @@ library(fabletools)
 library(lubridate)
 library(plotly)
 library(gganimate)
-Sys.setlocale("LC_TIME", "en_US.UTF-8") #to set months in English
 
+invisible(Sys.setlocale("LC_TIME", "en_US.UTF-8")) # Set months in English without output
 ```
 
 ```{r}
 
-banana_tsibble <- read_csv("Cleaned_Commodity_Prices.csv", show_col_types = FALSE) |>
-  select(Year, Month, `Banana, US`) |>  # Keep only relevant columns
-  mutate(Date = yearmonth(paste(Year, Month, sep = "-"))) |>
-  select(Date, `Banana, US`) |>                             
-  as_tsibble(index = Date)
+banana_tsibble <- suppressMessages(
+  read_csv("Cleaned_Commodity_Prices.csv", show_col_types = FALSE) |>
+    select(Year, Month, `Banana, US`) |>
+    mutate(Date = yearmonth(paste(Year, Month, sep = "-"))) |>
+    select(Date, `Banana, US`) |>                             
+    as_tsibble(index = Date)
+)
 
 ```
 
