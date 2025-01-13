@@ -224,7 +224,7 @@ ggplot(ts_df, aes(x = Log_Level)) +
   labs(title = "Histogram and Kernel Density of Log-Levels", x = "Log(Level)", y = "Density") +
   theme_minimal()
 
-# Scatterplot of Levels vs Lagged Levels
+# Scatter plot of Levels vs Lagged Levels
 ts_df$Lagged_Level <- lag(ts_df$`Banana, US`, 1)  # Creating lagged series
 ggplot(ts_df, aes(x = Lagged_Level, y = `Banana, US`)) +
   geom_point() +
@@ -232,3 +232,4 @@ ggplot(ts_df, aes(x = Lagged_Level, y = `Banana, US`)) +
   theme_minimal()
     
     ```
+*DONT FORGET TO DOUBLE CHECK!
