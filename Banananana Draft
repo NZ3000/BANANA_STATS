@@ -1,0 +1,95 @@
+
+library(fpp3)
+library(readxl)
+library(ggthemes)
+library(knitr)
+library(dplyr)
+library(car)
+library(readxl)
+library(naniar)
+library(tidyr)
+library(ggplot2)
+library(tsibble)
+library(lubridate)
+
+Sys.setlocale("LC_TIME", "en_US.UTF-8")
+
+CMO_Historical_Data_Monthly <- read_excel("C:/STUDYING KSE/Econometrics/2.1 Econometrics/CMO-Historical-Data-Monthly.xlsx", 
+                                          sheet = "Monthly Prices", range = "A5:BT786")
+View(CMO_Historical_Data_Monthly)
+glimpse(CMO_Historical_Data_Monthly)
+CMO_Historical_Data_Monthly <- CMO_Historical_Data_Monthly %>%
+  rename(Month = 1)
+
+Banana_price <- CMO_Historical_Data_Monthly %>%
+  select(Month, `Banana, US`) %>%
+  filter(!is.na(Month)) %>%  # Remove rows where Month is NA
+  mutate(Month = yearmonth(Month)) %>%  # Convert Month to a yearmonth object
+  tsibble(index = Month)  # Define key and index
+Banana_price <- Banana_price %>%
+  mutate(`Banana, US` = as.numeric(`Banana, US`))
+######################################################################################
+# View the result
+print(banana_tsibble)
+
+
+autoplot(banana_tsibble, `Banana, US`) +
+  ggtitle("Banana Prices Over Time") +
+  xlab("Date") +
+  ylab("Price (US $)") +
+  theme_minimal()
+
+# Assuming Banana_price is already loaded and is in the tsibble format
+
+# Convert the tsibble to a data frame for easier manipulation
+ts_df <- as.data.frame(Banana_price)
+
+# Log transformation of the data
+ts_df$Log_Level <- log(ts_df$`Banana, US`)
+
+# First differences of the data (difference in price)
+ts_df$Diff_Level <- c(NA, diff(ts_df$`Banana, US`))  # First difference, NA for the first value
+
+# Plotting Price Developments in Levels, Logs, and First Differences
+
+# Levels Plot
+ggplot(ts_df, aes(x = Month, y = `Banana, US`)) +
+  geom_line() +
+  labs(title = "Price Developments in Levels", y = "Level (USD)", x = "Month") +
+  theme_minimal()
+
+# Log Plot
+ggplot(ts_df, aes(x = Month, y = Log_Level)) +
+  geom_line() +
+  labs(title = "Price Developments in Log-Levels", y = "Log(Level)", x = "Month") +
+  theme_minimal()
+
+# First Differences Plot
+ggplot(ts_df, aes(x = Month, y = Diff_Level)) +
+  geom_line() +
+  labs(title = "First Differences of Price Developments", y = "First Difference (USD)", x = "Month") +
+  theme_minimal()
+
+# Histograms and Kernel Densities
+
+# Histogram for Levels
+ggplot(ts_df, aes(x = `Banana, US`)) +
+  geom_histogram(aes(y = ..density..), bins = 20, fill = "skyblue", color = "black") +
+  geom_density(alpha = 0.2, fill = "red") +
+  labs(title = "Histogram and Kernel Density of Levels", x = "Level (USD)", y = "Density") +
+  theme_minimal()
+
+# Histogram for Log-Levels
+ggplot(ts_df, aes(x = Log_Level)) +
+  geom_histogram(aes(y = ..density..), bins = 20, fill = "lightgreen", color = "black") +
+  geom_density(alpha = 0.2, fill = "blue") +
+  labs(title = "Histogram and Kernel Density of Log-Levels", x = "Log(Level)", y = "Density") +
+  theme_minimal()
+
+# Scatterplot of Levels vs Lagged Levels
+ts_df$Lagged_Level <- lag(ts_df$`Banana, US`, 1)  # Creating lagged series
+ggplot(ts_df, aes(x = Lagged_Level, y = `Banana, US`)) +
+  geom_point() +
+  labs(title = "Scatterplot of Levels vs Lagged Levels", x = "Lagged Level (USD)", y = "Level (USD)") +
+  theme_minimal()
+
