@@ -47,6 +47,7 @@ options(repos = c(CRAN = "https://cran.rstudio.com"))
 # install.packages("fabletools")
 # install.packages("lubridate")
 # install.packages("plotly")
+# install.packages("fpp3")
 
 
 
@@ -75,6 +76,7 @@ library(fabletools)
 library(lubridate)
 library(plotly)
 library(gganimate)
+library(fpp3)
 
 invisible(Sys.setlocale("LC_TIME", "en_US.UTF-8")) # Set months in English without output
 ```
@@ -88,16 +90,74 @@ banana_tsibble <- suppressMessages(
     select(Date, `Banana, US`) |>                             
     as_tsibble(index = Date)
 )
+```
+```{r}
 
+summary <- tibble(
+  Metric = c("Start Year", "End Year", "Total Observations", "Min Price", "Max Price", "Mean Price", "Standard Deviation"),
+  Value = c(
+    min(year(banana_tsibble$Date)),
+    max(year(banana_tsibble$Date)),
+    nrow(banana_tsibble),
+    round(min(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
+    round(max(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
+    round(mean(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
+    round(sd(banana_tsibble$`Banana, US`, na.rm = TRUE), 2)
+  )
+)
+
+knitr::kable(summary, col.names = c("Metric", "Value"), caption = "Banana Prices Dataset")
 ```
 
 Data
-
 ```{r}
-autoplot(banana_tsibble, `Banana, US`) +
-  ggtitle("Banana Prices Over Time") +
+
+# Create an interactive line plot with plotly
+p <- ggplot(banana_tsibble, aes(x = Date, y = `Banana, US`)) +
+  geom_line(color = "blue") +
+  ggtitle("Banana Prices Over Time (Levels)") +
   xlab("Date") +
-  ylab("Price (US $)") +
+  ylab("Price (US $/kg)") +
+  theme_minimal()
+
+# Convert ggplot to an interactive plotly object
+ggplotly(p) %>%
+  layout(title = "Banana Prices Over Time",
+         xaxis = list(title = "Date"),
+         yaxis = list(title = "Price (US $/kg)"))
+```
+### Historical Events Affecting Banana Prices
+
+- **1973–1979**: Oil crises led to increased transportation costs, causing price fluctuations.
+- **Late 1990s**: Weather events (El Niño/La Niña) and changing trade policies caused instability.
+- **2005–2015**: Steep price increase due to rising production costs, hurricanes, and higher global demand.
+- **2022**: Sharp price drop driven by COVID-19 supply chain disruptions, inflation, and possible overproduction.
+
+The banana market is influenced by weather conditions, geopolitical factors, pest outbreaks, and supply chain dynamics.
+```{r}
+# Create new columns for logs and first differences
+banana_tsibble <- banana_tsibble %>%
+  mutate(
+    Log_Price = log(`Banana, US`),
+    Diff_Price = difference(`Banana, US`)
+  )
+
+# Log-transformed prices
+ggplot(banana_tsibble, aes(x = Date, y = Log_Price)) +
+  geom_line(color = "darkgreen") +
+  ggtitle("Log of Banana Prices Over Time") +
+  xlab("Date") +
+  ylab("Log Price (Log US $/kg)") +
+  theme_minimal()
+
+banana_tsibble_diff <- banana_tsibble %>% filter(!is.na(Diff_Price))
+
+# Plot first differences
+ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
+  geom_line(color = "red") +
+  ggtitle("First Differences of Banana Prices Over Time") +
+  xlab("Date") +
+  ylab("Price Difference (US $/kg)") +
   theme_minimal()
 ```
 
@@ -119,28 +179,60 @@ banana_tsibble |>
         axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+Insights
 ```{r}
-banana_tsibble |>
-  mutate(Month = month(Date, label = TRUE)) |>  # Extract month as a factor
-  group_by(Month) |>                            # Group by month
-  summarise(AveragePrice = mean(`Banana, US`, na.rm = TRUE)) |>  # Calculate average price
-  ggplot(aes(x = Month, y = AveragePrice, group = 1)) +
-  geom_line(color = "blue", linewidth = 1) +      # Use linewidth instead of size
-  geom_point(color = "blue", size = 3) +          # Add points to highlight averages
-  labs(y = "$ (USD)",
-       title = "Average Monthly Banana Prices in US",
-       x = "Month") +
+# Histogram and Kernel Density for Levels
+ggplot(banana_tsibble, aes(x = `Banana, US`)) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "lightblue", color = "black") +
+  geom_density(alpha = 0.4, fill = "blue") +
+  ggtitle("Histogram and Kernel Density of Banana Prices (Levels)") +
+  xlab("Price (US $/kg)") +
+  ylab("Density") +
+  theme_minimal()
+
+# Histogram and Kernel Density for Logs
+ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
+  geom_histogram(aes(y = ..density..), bins = 30, fill = "lightgreen", color = "black") +
+  geom_density(alpha = 0.4, fill = "green") +
+  ggtitle("Histogram and Kernel Density of Log-Banana Prices") +
+  xlab("Log Price (Log US $/kg)") +
+  ylab("Density") +
+  theme_minimal()
+```
+```{r}
+# Create lagged values
+banana_lagged <- banana_tsibble %>%
+  mutate(Lag_1 = lag(`Banana, US`, 1)) %>% # Lag by 1 period
+  filter(!is.na(Lag_1))                   # Remove NA values caused by lagging
+
+# Scatter plot of levels vs lagged levels
+ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
+  geom_point(color = "blue") +
+  ggtitle("Scatter Plot: Banana Prices vs Lagged Banana Prices") +
+  xlab("Lagged Price (US $/kg)") +
+  ylab("Price (US $/kg)") +
+  theme_minimal()
+```
+```{r}
+# Calculate first differences of the time series
+banana_diff <- banana_tsibble %>%
+  mutate(Diff_Price = difference(`Banana, US`)) %>%
+  filter(!is.na(Diff_Price))
+
+ggAcf(banana_diff$Diff_Price) +
+  ggtitle("Autocorrelation Function (ACF) of First Differences") +
+  ylab("ACF") +
+  xlab("Lag") +
   theme_minimal()
 ```
 
-Insights
 
 ```{r}
 banana_tsibble |>
   mutate(Month = month(Date, label = TRUE)) |>  # Extract Month as factor
   ggplot(aes(x = Month, y = `Banana, US`)) +
   geom_boxplot(fill = "lightblue", alpha = 0.6) +  # Boxplot
-  stat_summary(fun = mean, geom = "line", aes(group = 1), color = "blue", size = 1) +  # Mean line
+  stat_summary(fun = mean, geom = "line", aes(group = 1), color = "blue", linewidth = 1) +  # Mean line
   labs(y = "$/kg", 
        title = "Boxplot of Banana Prices by Month with Mean Line",
        x = "Month") +
@@ -163,73 +255,23 @@ banana_tsibble |>
 
     -   Outliers appear in several months, especially in **January, June, and December**, which may indicate extreme banana prices in specific years.
     -   These outliers might be caused by economic or climatic events affecting banana supply during these periods.
+```{r}
+banana_tsibble %>%
+  mutate(Month = month(Date, label = TRUE)) %>%
+  ggplot(aes(x = year(Date), y = `Banana, US`, color = Month)) +
+  geom_line(alpha = 0.5) +
+  geom_smooth(method = "loess", formula = y ~ x, se = FALSE, linewidth = 1) +
+  facet_wrap(~ Month, scales = "free_y") +
+  labs(
+    title = "Subseries Plot: Banana Prices by Month (Improved)",
+    x = "Year",
+    y = "Price (US $/kg)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+### Comments on Subseries Plot
 
-    ```{r}
-    banana_yearly <- banana_tsibble %>%
-      index_by(Year = year(Date)) %>%  # Group by year
-      summarise(Avg_Price = mean(`Banana, US`, na.rm = TRUE))  # Compute yearly average
-
-    # Create an interactive plot using plotly
-    plot_ly(banana_yearly, x = ~Year, y = ~Avg_Price, type = 'scatter', mode = 'lines+markers') %>%
-      layout(title = "Interactive Time Series Plot: Banana Prices",
-             xaxis = list(title = "Year"),
-             yaxis = list(title = "Price ($/kg)"))
-    ```
-
-    ```{r}
-    # Assuming Banana_price is already loaded and is in the tsibble format
-
-# Convert the tsibble to a data frame for easier manipulation
-ts_df <- as.data.frame(banana_tsibble)
-
-# Log transformation of the data
-ts_df$Log_Level <- log(ts_df$`Banana, US`)
-
-# First differences of the data (difference in price)
-ts_df$Diff_Level <- c(NA, diff(ts_df$`Banana, US`))  # First difference, NA for the first value
-
-# Plotting Price Developments in Levels, Logs, and First Differences
-
-# Levels Plot
-ggplot(ts_df, aes(x = Date, y = `Banana, US`)) +
-  geom_line() +
-  labs(title = "Price Developments in Levels", y = "Level (USD)", x = "Month") +
-  theme_minimal()
-
-# Log Plot
-ggplot(ts_df, aes(x = Date, y = Log_Level)) +
-  geom_line() +
-  labs(title = "Price Developments in Log-Levels", y = "Log(Level)", x = "Month") +
-  theme_minimal()
-
-# First Differences Plot
-ggplot(ts_df, aes(x = Date, y = Diff_Level)) +
-  geom_line() +
-  labs(title = "First Differences of Price Developments", y = "First Difference (USD)", x = "Month") +
-  theme_minimal()
-
-# Histograms and Kernel Densities
-
-# Histogram for Levels
-ggplot(ts_df, aes(x = `Banana, US`)) +
-  geom_histogram(aes(y = ..density..), bins = 20, fill = "skyblue", color = "black") +
-  geom_density(alpha = 0.2, fill = "red") +
-  labs(title = "Histogram and Kernel Density of Levels", x = "Level (USD)", y = "Density") +
-  theme_minimal()
-
-# Histogram for Log-Levels
-ggplot(ts_df, aes(x = Log_Level)) +
-  geom_histogram(aes(y = ..density..), bins = 20, fill = "lightgreen", color = "black") +
-  geom_density(alpha = 0.2, fill = "blue") +
-  labs(title = "Histogram and Kernel Density of Log-Levels", x = "Log(Level)", y = "Density") +
-  theme_minimal()
-
-# Scatter plot of Levels vs Lagged Levels
-ts_df$Lagged_Level <- lag(ts_df$`Banana, US`, 1)  # Creating lagged series
-ggplot(ts_df, aes(x = Lagged_Level, y = `Banana, US`)) +
-  geom_point() +
-  labs(title = "Scatterplot of Levels vs Lagged Levels", x = "Lagged Level (USD)", y = "Level (USD)") +
-  theme_minimal()
-    
-    ```
-*DONT FORGET TO DOUBLE CHECK!
+- Banana prices show an **upward trend** across all months.
+- **Higher variability** is observed in recent years.
+- Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
