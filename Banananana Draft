@@ -42,7 +42,7 @@ autoplot(banana_tsibble, `Banana, US`) +
 # Assuming Banana_price is already loaded and is in the tsibble format
 
 # Convert the tsibble to a data frame for easier manipulation
-ts_df <- as.data.frame(Banana_price)
+ts_df <- as.data.frame(banana_tsibble)
 
 # Log transformation of the data
 ts_df$Log_Level <- log(ts_df$`Banana, US`)
