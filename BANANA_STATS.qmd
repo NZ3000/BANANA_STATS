@@ -108,7 +108,8 @@ summary <- tibble(
 
 knitr::kable(summary, col.names = c("Metric", "Value"), caption = "Banana Prices Dataset")
 ```
-
+> The World Bank compiled and published US banana price data in Commodity Markets Outlook. 
+These prices are in US dollars per kilogram, represent the average market rates from global banana trade.
 ```{r}
 
 # Create an interactive line plot with plotly
@@ -131,6 +132,7 @@ ggplotly(p) %>%
 - **Late 1990s**: Weather events (El Niño/La Niña) and changing trade policies caused instability.
 - **2005–2015**: Steep price increase due to rising production costs, hurricanes, and higher global demand.
 - **2022**: Sharp price drop driven by COVID-19 supply chain disruptions, inflation, and possible overproduction.
+- **2024**: Post COVID restore.
 
 The banana market is influenced by weather conditions, geopolitical factors, pest outbreaks, and supply chain dynamics.
 ```{r}
@@ -160,26 +162,24 @@ ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
   theme_minimal()
 ```
 
-> Log of Banana Prices Over Time Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes.
-First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
+> Log of Banana Prices Over Time Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes.<br>
+
+>First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
 
 ```{r}
-# Ensure banana_tsibble is correctly formatted as a tsibble
-banana_tsibble <- banana_tsibble %>%
-  as_tsibble(index = Date)
-
-# Create lagged values
-banana_lagged <- banana_tsibble %>%
-  mutate(Lag_1 = dplyr::lag(`Banana, US`, 1)) %>%  # Use dplyr::lag for clarity
-  filter(!is.na(Lag_1))                            # Remove NA values caused by lagging
-
-# Scatter plot of levels vs lagged levels
-ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
-  geom_point(color = "blue", alpha = 0.5) +        # Add transparency for better visualization
-  ggtitle("Scatter Plot: Banana Prices vs Lagged Banana Prices") +
-  xlab("Lagged Price (US $/kg)") +
-  ylab("Price (US $/kg)") +
-  theme_minimal()
+banana_tsibble |>
+  mutate(Month = month(Date, label = TRUE),   # Extract month as a factor
+         Year = year(Date),                   # Extract year
+         Decade = floor(Year / 10) * 10) |>   # Create a decade variable
+  filter(Year %% 3 == 0) |>                   # Select only years divisible by 3
+  ggplot(aes(x = Month, y = `Banana, US`, color = factor(Year), group = Year)) +
+  geom_line() +
+  labs(y = "$ (USD)",
+       title = "Seasonal Plot: Banana Prices in US by Decade (Sampled Years)") +
+  facet_wrap(~ Decade, scales = "fixed", ncol = 2) +  # Two columns for better readability
+  theme_minimal() +
+  theme(legend.position = "none",               # Remove the legend
+        axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 > The seasonal plot shows that banana prices in the US exhibit minimal seasonal variation across decades, with a slight tendency for prices to peak around mid-year in some decades, such as the 2000s and 2020s. Overall, the trend reflects a relatively stable price pattern within each year, likely due to consistent supply and demand dynamics for bananas.
