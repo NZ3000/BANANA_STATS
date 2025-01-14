@@ -161,7 +161,7 @@ ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
   theme_minimal()
 ```
 
-Time Plot description
+> Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes
 
 ```{r}
 banana_tsibble |>
