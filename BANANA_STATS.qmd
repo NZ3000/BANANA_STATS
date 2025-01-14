@@ -209,14 +209,18 @@ ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
 > The histogram and kernel density plot of the logarithm of banana prices exhibit a multimodal distribution, indicating distinct clusters of price levels over time. This transformation reduces skewness and highlights the presence of multiple regimes or patterns in banana pricing, potentially linked to market structure changes or external shocks.
 
 ```{r}
+# Ensure banana_tsibble is correctly formatted as a tsibble
+banana_tsibble <- banana_tsibble %>%
+  as_tsibble(index = Date)
+
 # Create lagged values
 banana_lagged <- banana_tsibble %>%
-  mutate(Lag_1 = lag(`Banana, US`, 1)) %>% # Lag by 1 period
-  filter(!is.na(Lag_1))                   # Remove NA values caused by lagging
+  mutate(Lag_1 = dplyr::lag(`Banana, US`, 1)) %>%  # Use dplyr::lag for clarity
+  filter(!is.na(Lag_1))                            # Remove NA values caused by lagging
 
 # Scatter plot of levels vs lagged levels
 ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
-  geom_point(color = "blue") +
+  geom_point(color = "blue", alpha = 0.5) +        # Add transparency for better visualization
   ggtitle("Scatter Plot: Banana Prices vs Lagged Banana Prices") +
   xlab("Lagged Price (US $/kg)") +
   ylab("Price (US $/kg)") +
