@@ -96,9 +96,9 @@ banana_tsibble <- suppressMessages(
 summary <- tibble(
   Metric = c("Start Year", "End Year", "Total Observations", "Min Price", "Max Price", "Mean Price", "Standard Deviation"),
   Value = c(
-    min(year(banana_tsibble$Date)),
-    max(year(banana_tsibble$Date)),
-    nrow(banana_tsibble),
+    format(as.integer(min(year(banana_tsibble$Date))), nsmall = 0),
+    format(as.integer(max(year(banana_tsibble$Date))), nsmall = 0),
+    format(nrow(banana_tsibble), nsmall = 0),
     round(min(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
     round(max(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
     round(mean(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
@@ -109,7 +109,6 @@ summary <- tibble(
 knitr::kable(summary, col.names = c("Metric", "Value"), caption = "Banana Prices Dataset")
 ```
 
-Data
 ```{r}
 
 # Create an interactive line plot with plotly
@@ -165,19 +164,22 @@ ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
 First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
 
 ```{r}
-banana_tsibble |>
-  mutate(Month = month(Date, label = TRUE),   # Extract month as a factor
-         Year = year(Date),                   # Extract year
-         Decade = floor(Year / 10) * 10) |>   # Create a decade variable
-  filter(Year %% 3 == 0) |>                   # Select only years divisible by 3
-  ggplot(aes(x = Month, y = `Banana, US`, color = factor(Year), group = Year)) +
-  geom_line() +
-  labs(y = "$ (USD)",
-       title = "Seasonal Plot: Banana Prices in US by Decade (Sampled Years)") +
-  facet_wrap(~ Decade, scales = "fixed", ncol = 2) +  # Two columns for better readability
-  theme_minimal() +
-  theme(legend.position = "none",               # Remove the legend
-        axis.text.x = element_text(angle = 45, hjust = 1))
+# Ensure banana_tsibble is correctly formatted as a tsibble
+banana_tsibble <- banana_tsibble %>%
+  as_tsibble(index = Date)
+
+# Create lagged values
+banana_lagged <- banana_tsibble %>%
+  mutate(Lag_1 = dplyr::lag(`Banana, US`, 1)) %>%  # Use dplyr::lag for clarity
+  filter(!is.na(Lag_1))                            # Remove NA values caused by lagging
+
+# Scatter plot of levels vs lagged levels
+ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
+  geom_point(color = "blue", alpha = 0.5) +        # Add transparency for better visualization
+  ggtitle("Scatter Plot: Banana Prices vs Lagged Banana Prices") +
+  xlab("Lagged Price (US $/kg)") +
+  ylab("Price (US $/kg)") +
+  theme_minimal()
 ```
 
 > The seasonal plot shows that banana prices in the US exhibit minimal seasonal variation across decades, with a slight tendency for prices to peak around mid-year in some decades, such as the 2000s and 2020s. Overall, the trend reflects a relatively stable price pattern within each year, likely due to consistent supply and demand dynamics for bananas.
@@ -185,7 +187,7 @@ banana_tsibble |>
 ```{r}
 # Histogram and Kernel Density for Levels
 ggplot(banana_tsibble, aes(x = `Banana, US`)) +
-  geom_histogram(aes(y = ..density..), bins = 30, fill = "lightblue", color = "black") +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "lightblue", color = "black") +
   geom_density(alpha = 0.4, fill = "blue") +
   ggtitle("Histogram and Kernel Density of Banana Prices (Levels)") +
   xlab("Price (US $/kg)") +
@@ -197,7 +199,7 @@ ggplot(banana_tsibble, aes(x = `Banana, US`)) +
 ```{r}
 # Histogram and Kernel Density for Logs
 ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
-  geom_histogram(aes(y = ..density..), bins = 30, fill = "lightgreen", color = "black") +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "lightgreen", color = "black") +
   geom_density(alpha = 0.4, fill = "green") +
   ggtitle("Histogram and Kernel Density of Log-Banana Prices") +
   xlab("Log Price (Log US $/kg)") +
