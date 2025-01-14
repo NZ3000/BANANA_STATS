@@ -161,7 +161,8 @@ ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
   theme_minimal()
 ```
 
-> Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes
+> Log of Banana Prices Over Time Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes.
+First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
 
 ```{r}
 banana_tsibble |>
@@ -179,7 +180,8 @@ banana_tsibble |>
         axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Insights
+> The seasonal plot shows that banana prices in the US exhibit minimal seasonal variation across decades, with a slight tendency for prices to peak around mid-year in some decades, such as the 2000s and 2020s. Overall, the trend reflects a relatively stable price pattern within each year, likely due to consistent supply and demand dynamics for bananas.
+
 ```{r}
 # Histogram and Kernel Density for Levels
 ggplot(banana_tsibble, aes(x = `Banana, US`)) +
@@ -189,7 +191,10 @@ ggplot(banana_tsibble, aes(x = `Banana, US`)) +
   xlab("Price (US $/kg)") +
   ylab("Density") +
   theme_minimal()
+```
+> The histogram and kernel density plot reveal that banana prices in the US are positively skewed, with the majority of prices clustering below $0.5 per kilogram. However, there is a long tail extending toward higher price levels, indicating occasional periods of elevated prices that are less frequent.
 
+```{r}
 # Histogram and Kernel Density for Logs
 ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
   geom_histogram(aes(y = ..density..), bins = 30, fill = "lightgreen", color = "black") +
@@ -199,6 +204,8 @@ ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
   ylab("Density") +
   theme_minimal()
 ```
+> The histogram and kernel density plot of the logarithm of banana prices exhibit a multimodal distribution, indicating distinct clusters of price levels over time. This transformation reduces skewness and highlights the presence of multiple regimes or patterns in banana pricing, potentially linked to market structure changes or external shocks.
+
 ```{r}
 # Create lagged values
 banana_lagged <- banana_tsibble %>%
@@ -213,6 +220,8 @@ ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
   ylab("Price (US $/kg)") +
   theme_minimal()
 ```
+> The scatter plot of banana prices versus lagged prices demonstrates a strong positive linear relationship, indicating high persistence in price levels over time. This suggests that banana prices exhibit significant autocorrelation, with current prices being highly dependent on their immediate past values. 
+
 ```{r}
 # Calculate first differences of the time series
 banana_diff <- banana_tsibble %>%
@@ -225,7 +234,7 @@ ggAcf(banana_diff$Diff_Price) +
   xlab("Lag") +
   theme_minimal()
 ```
-
+> The ACF plot of the first differences indicates that there is little significant autocorrelation at most lags, suggesting that the differencing has effectively removed the trend and made the series closer to stationarity. However, a few significant spikes at specific lags suggest some short-term dependencies or patterns still present in the data.
 
 ```{r}
 banana_tsibble |>
@@ -238,7 +247,7 @@ banana_tsibble |>
        x = "Month") +
   theme_minimal()
 ```
-
+> The boxplot of banana prices by month shows relatively consistent median prices throughout the year, with minor seasonal variation as the mean line slightly decreases from February to September. The presence of outliers across months indicates occasional price volatility, but overall, monthly price distributions appear stable.
 ## Insights from the Boxplot:
 
 1.  **Price Stability**:
