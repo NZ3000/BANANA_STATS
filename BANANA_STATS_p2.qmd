@@ -48,6 +48,9 @@ options(repos = c(CRAN = "https://cran.rstudio.com"))
 # install.packages("lubridate")
 # install.packages("plotly")
 # install.packages("fpp3")
+# install.packages("MuMIn")
+
+
 
 
 
@@ -290,3 +293,89 @@ banana_tsibble %>%
 - Banana prices show an **upward trend** across all months.
 - **Higher variability** is observed in recent years.
 - Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
+```{r}
+# Ensure your time series data is properly formatted as a ts object
+# Assuming banana_tsibble is the dataset
+banana_ts <- ts(banana_tsibble$`Banana, US`, frequency = 12, start = c(min(year(banana_tsibble$Date)), min(month(banana_tsibble$Date))))
+
+# Perform STL decomposition
+banana_stl <- stl(banana_ts, s.window = "periodic")
+
+# Plot the STL decomposition
+autoplot(banana_stl) +
+  ggtitle("STL Decomposition of Banana Prices") +
+  theme_minimal()
+
+# Extract and describe components
+trend <- banana_stl$time.series[, "trend"]
+seasonal <- banana_stl$time.series[, "seasonal"]
+remainder <- banana_stl$time.series[, "remainder"]
+
+# Summary of components
+cat("Trend Summary:\n")
+summary(trend)
+
+cat("\nSeasonality Summary:\n")
+summary(seasonal)
+
+cat("\nRemainder Summary:\n")
+summary(remainder)
+```
+```{r}
+# Plot the remainder component from STL decomposition to observe variance
+autoplot(banana_stl$time.series[, "remainder"]) +
+  ggtitle("Remainder Component from STL Decomposition") +
+  xlab("Time") +
+  ylab("Remainder") +
+  theme_minimal()
+
+# Perform a Box-Cox transformation test
+lambda <- BoxCox.lambda(banana_ts)
+cat("Suggested Box-Cox Transformation Lambda:", lambda, "\n")
+
+# Apply Box-Cox transformation if lambda is not close to 1
+if (abs(lambda - 1) > 0.1) {
+  banana_ts_transformed <- BoxCox(banana_ts, lambda)
+  # Plot transformed data
+  autoplot(banana_ts_transformed) +
+    ggtitle("Transformed Banana Prices") +
+    theme_minimal()
+} else {
+  cat("No transformation needed as lambda is close to 1.")
+}
+```
+```{r}
+library(forecast)
+library(tseries)
+library(MuMIn)
+
+# Plot ACF and PACF of transformed data
+ggAcf(banana_ts_transformed, main = "ACF of Transformed Data")
+ggPacf(banana_ts_transformed, main = "PACF of Transformed Data")
+
+# Perform Augmented Dickey-Fuller Test
+adf_test <- adf.test(banana_ts_transformed, alternative = "stationary")
+cat("ADF Test p-value:", adf_test$p.value, "\n")
+
+# Apply Seasonal Differencing if needed
+banana_ts_diff <- diff(banana_ts_transformed, lag = 12)  # Seasonal differencing
+
+# Plot ACF/PACF after differencing
+ggAcf(banana_ts_diff, main = "ACF of Differenced Data")
+ggPacf(banana_ts_diff, main = "PACF of Differenced Data")
+
+# Re-run ADF Test on Differenced Data
+adf_test_diff <- adf.test(banana_ts_diff, alternative = "stationary")
+cat("ADF Test on Differenced Data p-value:", adf_test_diff$p.value, "\n")
+```
+```{r}
+auto_arima_model <- auto.arima(banana_ts_transformed, seasonal = TRUE)
+summary(auto_arima_model)
+
+arima_model_1 <- Arima(banana_ts_transformed, order = c(1, 1, 1), seasonal = c(1, 1, 0))
+arima_model_2 <- Arima(banana_ts_transformed, order = c(2, 1, 2), seasonal = c(1, 1, 1))
+
+AICc(arima_model_1)
+AICc(arima_model_2)
+```
+
