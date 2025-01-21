@@ -308,11 +308,7 @@ banana_tsibble |>
 -   **Higher variability** is observed in recent years.
 -   Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
 
-# Mini Project in R: #2 ARIMA
-
-#### 1.Produce an STL decomposition of the data and describe the trend and seasonality.
-
-# MP part 2
+# Mini Project in R part 2: ARIMA
 
 ### Task 1: Produce an STL decomposition of the data and describe the trend and seasonality.
 
@@ -342,9 +338,6 @@ summary(seasonal)
 cat("\nRemainder Summary:\n")
 summary(remainder)
 ```
-
--   The trend shows a gradual increase in banana prices from the 1960s to the mid-2000s, followed by a sharp rise in the late 2000s and a subsequent decline after 2010. This long-term component reflects significant upward movement over time with a peak before 2010.
--   The seasonal component exhibits a consistent repeating pattern throughout the entire period, with slight fluctuations around the mean. The amplitude of these seasonal cycles remains stable, indicating regular periodic variations in banana prices, likely linked to annual production or consumption cycles.
 
 ```{r}
 
