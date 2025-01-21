@@ -80,6 +80,8 @@ library(lubridate)
 library(plotly)
 library(gganimate)
 library(fpp3)
+library(tseries)
+library(MuMIn)
 
 invisible(Sys.setlocale("LC_TIME", "en_US.UTF-8")) # Set months in English without output
 ```
@@ -296,13 +298,17 @@ banana_tsibble %>%
 - **Higher variability** is observed in recent years.
 - Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
 
+<<<<<<< HEAD
+# Mini Project in R: #2 ARIMA
+
+#### 1.Produce an STL decomposition of the data and describe the trend and seasonality.
+=======
 # MP part 2
 
 ### Task 1: Produce an STL decomposition of the data and describe the trend and seasonality.
 
+>>>>>>> 758af59403431e92d7696edafffb5b29bbf8fb2c
 ```{r}
-# Ensure your time series data is properly formatted as a ts object
-# Assuming banana_tsibble is the dataset
 banana_ts <- ts(banana_tsibble$`Banana, US`, frequency = 12, start = c(min(year(banana_tsibble$Date)), min(month(banana_tsibble$Date))))
 
 # Perform STL decomposition
@@ -312,7 +318,7 @@ banana_stl <- stl(banana_ts, s.window = "periodic")
 autoplot(banana_stl) +
   ggtitle("STL Decomposition of Banana Prices") +
   theme_minimal()
-
+  
 # Extract and describe components
 trend <- banana_stl$time.series[, "trend"]
 seasonal <- banana_stl$time.series[, "seasonal"]
@@ -327,6 +333,9 @@ summary(seasonal)
 
 cat("\nRemainder Summary:\n")
 summary(remainder)
+<<<<<<< HEAD
+
+=======
 ```
 
 - The trend shows a gradual increase in banana prices from the 1960s to the mid-2000s, followed by a sharp rise in the late 2000s and a subsequent decline after 2010. This long-term component reflects significant upward movement over time with a peak before 2010.
@@ -334,13 +343,28 @@ summary(remainder)
 
 
 ```{r}
+>>>>>>> 758af59403431e92d7696edafffb5b29bbf8fb2c
 # Plot the remainder component from STL decomposition to observe variance
 autoplot(banana_stl$time.series[, "remainder"]) +
   ggtitle("Remainder Component from STL Decomposition") +
   xlab("Time") +
   ylab("Remainder") +
   theme_minimal()
+```
+### Trend and Seasonality of Banana Prices
 
+The analysis shows:
+
+- **Trend**: Banana prices have been steadily increasing over the years, reaching their highest point at 1.62 $/kg before dropping in 2024. On average, prices have trended around 0.54 $/kg over time.
+
+- **Seasonality**: Prices follow a clear yearly pattern, going slightly up and down throughout each year. These changes balance out, with an average seasonal effect of zero.
+
+- **Remainder**: There are also some unpredictable short-term changes in prices. These jumps are usually small, but sometimes they are larger, ranging from -0.18 to 0.26 $/kg.
+
+This means banana prices generally grow over time, follow a seasonal pattern each year, and occasionally show unexpected short-term changes.
+
+#### 2.Do the data need transforming? If so, find a suitable transformation.
+```{r}
 # Perform a Box-Cox transformation test
 lambda <- BoxCox.lambda(banana_ts)
 cat("Suggested Box-Cox Transformation Lambda:", lambda, "\n")
@@ -356,39 +380,278 @@ if (abs(lambda - 1) > 0.1) {
   cat("No transformation needed as lambda is close to 1.")
 }
 ```
+<<<<<<< HEAD
+## Data Transformation
 
+The data required transformation because its variance was not stable over time, as seen in the original time series plot. A **Box-Cox transformation** was applied with a lambda value of -0.318, which successfully stabilized the variance, making the data suitable for further analysis.
+
+#### 3.Are the data stationary? If not, find an appropriate differencing which yields stationary data. Please discuss if you need seasonal differencing (and do if necessary)
+=======
+
+>>>>>>> 758af59403431e92d7696edafffb5b29bbf8fb2c
 ```{r}
-library(forecast)
-library(tseries)
-library(MuMIn)
-
 # Plot ACF and PACF of transformed data
-ggAcf(banana_ts_transformed, main = "ACF of Transformed Data")
-ggPacf(banana_ts_transformed, main = "PACF of Transformed Data")
+ggAcf(banana_ts_transformed) +
+  ggtitle("ACF of Transformed Data") +
+  theme_minimal()
 
+ggPacf(banana_ts_transformed) +
+  ggtitle("PACF of Transformed Data") +
+  theme_minimal()
+```
+The ACF and PACF plots show the data is not stationary because there is strong autocorrelation. To make it stationary, we need to apply first-order differencing to remove the trend and seasonal differencing (lag 12) to handle yearly patterns.
+```{r}
 # Perform Augmented Dickey-Fuller Test
-adf_test <- adf.test(banana_ts_transformed, alternative = "stationary")
+adf_test <- suppressWarnings(adf.test(banana_ts_transformed, alternative = "stationary"))
 cat("ADF Test p-value:", adf_test$p.value, "\n")
 
 # Apply Seasonal Differencing if needed
 banana_ts_diff <- diff(banana_ts_transformed, lag = 12)  # Seasonal differencing
 
 # Plot ACF/PACF after differencing
-ggAcf(banana_ts_diff, main = "ACF of Differenced Data")
-ggPacf(banana_ts_diff, main = "PACF of Differenced Data")
+ggAcf(banana_ts_diff) +
+  ggtitle("ACF of Differenced Data") +
+  theme_minimal()
+
+ggPacf(banana_ts_diff) +
+  ggtitle("PACF of Differenced Data") +
+  theme_minimal()
 
 # Re-run ADF Test on Differenced Data
-adf_test_diff <- adf.test(banana_ts_diff, alternative = "stationary")
+adf_test_diff <- suppressWarnings(adf.test(banana_ts_diff, alternative = "stationary"))
 cat("ADF Test on Differenced Data p-value:", adf_test_diff$p.value, "\n")
 ```
+### Seasonal Differencing and Stationarity Check
+
+Seasonal differencing was applied to the banana price data to address non-stationarity.  
+- The **ACF** shows reduced autocorrelation, and the **PACF** has a sharp cutoff, indicating improved stationarity.  
+- The **ADF test p-value** is **0.01**, confirming the data is stationary after differencing.  
+
+The data is now ready for ARIMA modeling.
+
+#### 4.Identify a couple of ARIMA models (including auto ARIMA) that might be useful in describing the time series, by examining ACF/PACF. Which of your models is the best according to their AICc values?
 ```{r}
+# Automatically identify the best ARIMA model
 auto_arima_model <- auto.arima(banana_ts_transformed, seasonal = TRUE)
 summary(auto_arima_model)
 
-arima_model_1 <- Arima(banana_ts_transformed, order = c(1, 1, 1), seasonal = c(1, 1, 0))
+# Manually specify two alternative ARIMA models for comparison
+arima_model_1 <- Arima(banana_ts_transformed, order = c(1, 1, 1), seasonal = c(0, 0, 2))
 arima_model_2 <- Arima(banana_ts_transformed, order = c(2, 1, 2), seasonal = c(1, 1, 1))
 
-AICc(arima_model_1)
-AICc(arima_model_2)
+# Display AICc values for all models
+cat("AICc for Auto ARIMA:", AICc(auto_arima_model), "\n")
+cat("AICc for ARIMA(1,1,1)(0,0,2):", AICc(arima_model_1), "\n")
+cat("AICc for ARIMA(2,1,2)(1,1,1):", AICc(arima_model_2), "\n")
 ```
+## Model Selection Comments
+
+To select the best ARIMA model, we analyzed the ACF and PACF of differenced data and used their patterns to determine parameters. 
+
+- **ARIMA(1,1,1)(0,0,2):**
+  - **p (AR order):** Lag 1 is significant in the PACF.
+  - **d (differencing):** Stationarity achieved with first differencing.
+  - **q (MA order):** Lag 1 is significant in the ACF.
+  - **P, D, Q (seasonal):** Seasonal MA lag 2 based on ACF; no seasonal AR.
+
+- **ARIMA(2,1,2)(1,1,1):**
+  - **p (AR order):** PACF suggests lags 1 and 2.
+  - **d (differencing):** Stationarity achieved with first differencing.
+  - **q (MA order):** ACF suggests lags 1 and 2.
+  - **P, D, Q (seasonal):** Seasonal AR (lag 1), differencing, and MA (lag 1).
+
+The best model, **ARIMA(2,1,2)(1,1,1)**, had the lowest AICc, showing a better balance of fit and complexity compared to Auto ARIMA and ARIMA(1,1,1)(0,0,2).
+
+#### 5.Estimate the parameters of your preferred model and do diagnostic testing on the residuals. Do the residuals resemble white noise? If not, try to find another ARIMA model which fits better.
+```{r}
+# Load necessary libraries
+library(forecast)
+library(ggplot2)
+library(cowplot)
+
+# Step 1: Test the chosen model (ARIMA(2,1,2)(1,1,1))
+chosen_model <- Arima(banana_ts_transformed, order = c(2, 1, 2), seasonal = c(1, 1, 1))
+
+# Print chosen model AICc
+cat("Chosen Model: ARIMA(2,1,2)(1,1,1)\n")
+cat("AICc:", AICc(chosen_model), "\n")
+
+# Residual diagnostics for chosen model
+ljung_box_chosen <- Box.test(residuals(chosen_model), lag = 24, fitdf = length(chosen_model$coef), type = "Ljung-Box")
+cat("Ljung-Box Test p-value for Chosen Model:", ljung_box_chosen$p.value, "\n")
+
+# Plot residual diagnostics for the chosen model
+acf_chosen <- ggAcf(residuals(chosen_model)) +
+  ggtitle("ACF of Residuals (Chosen Model)") +
+  theme_minimal()
+
+pacf_chosen <- ggPacf(residuals(chosen_model)) +
+  ggtitle("PACF of Residuals (Chosen Model)") +
+  theme_minimal()
+
+# Display plots for the chosen model
+cat("\nResidual Diagnostics for Chosen Model\n")
+cowplot::plot_grid(acf_chosen, pacf_chosen, labels = c("A", "B"))
+
+# Step 2: Refine the model if residuals do not resemble white noise
+if (ljung_box_chosen$p.value < 0.05) {
+  cat("\nResiduals indicate white noise assumption is violated. Refining model...\n")
+  
+  # Refined Models
+  refined_model_1 <- Arima(banana_ts_transformed, order = c(2, 1, 3), seasonal = c(1, 1, 1))
+  refined_model_2 <- Arima(banana_ts_transformed, order = c(3, 1, 2), seasonal = c(1, 1, 1))
+  
+  # Compare AICc values
+  aicc_1 <- AICc(refined_model_1)
+  aicc_2 <- AICc(refined_model_2)
+  
+  cat("AICc for ARIMA(2,1,3)(1,1,1):", aicc_1, "\n")
+  cat("AICc for ARIMA(3,1,2)(1,1,1):", aicc_2, "\n")
+  
+  # Select the better refined model
+  if (aicc_1 < aicc_2) {
+    best_model <- refined_model_1
+    cat("Selected Refined Model: ARIMA(2,1,3)(1,1,1)\n")
+  } else {
+    best_model <- refined_model_2
+    cat("Selected Refined Model: ARIMA(3,1,2)(1,1,1)\n")
+  }
+  
+  # Residual diagnostics for the refined model
+  refined_ljung_box <- Box.test(residuals(best_model), lag = 24, fitdf = length(best_model$coef), type = "Ljung-Box")
+  cat("Ljung-Box Test p-value for Refined Model:", refined_ljung_box$p.value, "\n")
+  
+  # Plot residual diagnostics for the refined model
+  acf_refined <- ggAcf(residuals(best_model)) +
+    ggtitle("ACF of Residuals (Refined Model)") +
+    theme_minimal()
+  
+  pacf_refined <- ggPacf(residuals(best_model)) +
+    ggtitle("PACF of Residuals (Refined Model)") +
+    theme_minimal()
+  
+  cat("\nResidual Diagnostics for Refined Model\n")
+  cowplot::plot_grid(acf_refined, pacf_refined, labels = c("C", "D"))
+} else {
+  cat("\nResiduals resemble white noise. No further refinement needed.\n")
+}
+```
+## Residual Diagnostics Comments
+
+### Chosen Model: ARIMA(2,1,2)(1,1,1)
+- **Ljung-Box Test p-value**: 0.0026 indicates residuals do not resemble white noise. Refinement is needed.
+- **ACF/PACF Diagnostics**: Residual plots show significant autocorrelations, suggesting room for improvement.
+
+### Refined Model: ARIMA(2,1,3)(1,1,1)
+- **Ljung-Box Test p-value**: 0.1245 confirms residuals resemble white noise.
+- **ACF/PACF Diagnostics**: No significant autocorrelations, indicating the model is a good fit.
+
+**Conclusion**: The refined model ARIMA(2,1,3)(1,1,1) is better, as residuals are uncorrelated and satisfy white noise conditions.
+
+#### 6. Assuming you have a list of possible models, please pick up your model based on how accurate they predict, using the training and test parts of your data.
+```{r}
+# Load necessary libraries
+library(forecast)
+library(ggplot2)
+
+# Split data into training and test sets
+set.seed(123)  # Set seed for reproducibility
+n <- length(banana_ts_transformed)
+train_end <- floor(0.8 * n)  # 80% of the data for training
+train_data <- window(banana_ts_transformed, end = c(time(banana_ts_transformed)[train_end]))
+test_data <- window(banana_ts_transformed, start = c(time(banana_ts_transformed)[train_end + 1]))
+
+# Fit models to the training data
+model_1 <- Arima(train_data, order = c(2, 1, 2), seasonal = c(1, 1, 1))  # ARIMA(2,1,2)(1,1,1)
+model_2 <- Arima(train_data, order = c(2, 1, 3), seasonal = c(1, 1, 1))  # ARIMA(2,1,3)(1,1,1)
+model_3 <- Arima(train_data, order = c(3, 1, 2), seasonal = c(1, 1, 1))  # ARIMA(3,1,2)(1,1,1)
+
+# Forecast on test data
+forecast_1 <- forecast(model_1, h = length(test_data))
+forecast_2 <- forecast(model_2, h = length(test_data))
+forecast_3 <- forecast(model_3, h = length(test_data))
+
+# Calculate accuracy metrics
+accuracy_1 <- accuracy(forecast_1, test_data)
+accuracy_2 <- accuracy(forecast_2, test_data)
+accuracy_3 <- accuracy(forecast_3, test_data)
+
+# Display accuracy results
+cat("Accuracy for ARIMA(2,1,2)(1,1,1):\n")
+print(accuracy_1)
+
+cat("\nAccuracy for ARIMA(2,1,3)(1,1,1):\n")
+print(accuracy_2)
+
+cat("\nAccuracy for ARIMA(3,1,2)(1,1,1):\n")
+print(accuracy_3)
+
+# Select the best model based on RMSE
+rmse_values <- c(accuracy_1["Test set", "RMSE"], 
+                 accuracy_2["Test set", "RMSE"], 
+                 accuracy_3["Test set", "RMSE"])
+best_model_index <- which.min(rmse_values)
+
+cat("\nBest Model Based on RMSE:\n")
+if (best_model_index == 1) {
+  cat("ARIMA(2,1,2)(1,1,1)\n")
+  best_model <- model_1
+} else if (best_model_index == 2) {
+  cat("ARIMA(2,1,3)(1,1,1)\n")
+  best_model <- model_2
+} else {
+  cat("ARIMA(3,1,2)(1,1,1)\n")
+  best_model <- model_3
+}
+
+# Plot forecasts of the best model
+autoplot(forecast(best_model), series = "Forecast") +
+  autolayer(test_data, series = "Test Data", color = "red") +
+  ggtitle("Best Model Forecast vs Test Data") +
+  xlab("Time") +
+  ylab("Banana Prices") +
+  theme_minimal()
+```
+## Model Accuracy and Selection
+
+We evaluated three ARIMA models—ARIMA(2,1,2)(1,1,1), ARIMA(2,1,3)(1,1,1), and ARIMA(3,1,2)(1,1,1)—using RMSE and other accuracy metrics on training and test sets. Based on RMSE, ARIMA(2,1,2)(1,1,1) was selected as the best model since it provided the lowest RMSE value on the test set.
+
+The forecast plot demonstrates how the chosen model predicts test data, capturing the overall trend while slightly diverging in some parts. Confidence intervals highlight uncertainty, but the model remains robust for predictive purposes.
+
+#### 7.Eventually, do out-of-sample forecast for the next month. How many months of forecasts
+do you think are sufficiently accurate to be usable?
+```{r}
+# Step 1: Fit the best model to the full dataset
+final_model <- Arima(banana_ts_transformed, order = c(2, 1, 2), seasonal = c(1, 1, 1))
+
+# Step 2: Forecast for the next 12 months
+forecast_horizon <- 12  # Forecasting 12 months ahead
+forecast_results <- forecast(final_model, h = forecast_horizon)
+
+# Step 3: Create a time window for plotting (focus on 2000 onwards)
+forecast_plot_data <- window(banana_ts_transformed, start = c(2000, 1))  # Filter data from 2000
+final_forecast <- forecast(final_model, h = forecast_horizon)  # Generate the forecast
+
+# Step 4: Plot the forecast with a focus on 2000 onwards
+autoplot(forecast_plot_data) +
+  autolayer(final_forecast, series = "Forecast", PI = TRUE) +
+  xlab("Time") +
+  ylab("Transformed Banana Prices") +
+  ggtitle("Out-of-Sample Forecast for Banana Prices (2000 Onwards)") +
+  theme_minimal()
+
+# Step 5: Display forecast table for next 12 months
+cat("Forecast Results for the Next 12 Months:\n")
+print(forecast_results)
+
+# Step 6: Short Explanation
+cat("The forecast is suitable for short-term predictions, typically 3-6 months, with higher uncertainty for longer horizons.")
+```
+## Final Comments on Forecasting
+
+The **ARIMA(2,1,2)(1,1,1)** model was used to generate forecasts for the next 12 months. The forecast results show:
+- **Short-term accuracy**: Predictions for the first 3-6 months are reliable, as evidenced by narrower confidence intervals.
+- **Long-term uncertainty**: Beyond 6 months, the confidence intervals widen significantly, reflecting increased uncertainty in predictions.
+
+This suggests that the model is suitable for short-term planning, while long-term forecasts should be interpreted with caution.
 
