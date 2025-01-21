@@ -98,6 +98,7 @@ banana_tsibble <- suppressMessages(
     as_tsibble(index = Date)
 )
 ```
+
 ```{r}
 
 summary <- tibble(
@@ -115,11 +116,12 @@ summary <- tibble(
 
 knitr::kable(summary, col.names = c("Metric", "Value"), caption = "Banana Prices Dataset")
 ```
-> The World Bank compiled and published US banana price data in Commodity Markets Outlook. 
-These prices are in US dollars per kilogram, represent the average market rates from global banana trade.
-```{r}
 
+> The World Bank compiled and published US banana price data in Commodity Markets Outlook. These prices are in US dollars per kilogram, represent the average market rates from global banana trade.
+
+```{r}
 # Create an interactive line plot with plotly
+
 p <- ggplot(banana_tsibble, aes(x = Date, y = `Banana, US`)) +
   geom_line(color = "blue") +
   ggtitle("Banana Prices Over Time (Levels)") +
@@ -133,15 +135,17 @@ ggplotly(p) %>%
          xaxis = list(title = "Date"),
          yaxis = list(title = "Price (US $/kg)"))
 ```
+
 ### Historical Events Affecting Banana Prices
 
-- **1973–1979**: Oil crises led to increased transportation costs, causing price fluctuations.
-- **Late 1990s**: Weather events (El Niño/La Niña) and changing trade policies caused instability.
-- **2005–2015**: Steep price increase due to rising production costs, hurricanes, and higher global demand.
-- **2022**: Sharp price drop driven by COVID-19 supply chain disruptions, inflation, and possible overproduction.
-- **2024**: Post COVID restore.
+-   **1973–1979**: Oil crises led to increased transportation costs, causing price fluctuations.
+-   **Late 1990s**: Weather events (El Niño/La Niña) and changing trade policies caused instability.
+-   **2005–2015**: Steep price increase due to rising production costs, hurricanes, and higher global demand.
+-   **2022**: Sharp price drop driven by COVID-19 supply chain disruptions, inflation, and possible overproduction.
+-   **2024**: Post COVID restore.
 
 The banana market is influenced by weather conditions, geopolitical factors, pest outbreaks, and supply chain dynamics.
+
 ```{r}
 # Create new columns for logs and first differences
 banana_tsibble <- banana_tsibble %>%
@@ -171,7 +175,7 @@ ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
 
 > Log of Banana Prices Over Time Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes.<br>
 
->First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
+> First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
 
 ```{r}
 banana_tsibble |>
@@ -201,7 +205,8 @@ ggplot(banana_tsibble, aes(x = `Banana, US`)) +
   ylab("Density") +
   theme_minimal()
 ```
-> The histogram and kernel density plot reveal that banana prices in the US are positively skewed, with the majority of prices clustering below $0.5 per kilogram. However, there is a long tail extending toward higher price levels, indicating occasional periods of elevated prices that are less frequent.
+
+> The histogram and kernel density plot reveal that banana prices in the US are positively skewed, with the majority of prices clustering below \$0.5 per kilogram. However, there is a long tail extending toward higher price levels, indicating occasional periods of elevated prices that are less frequent.
 
 ```{r}
 # Histogram and Kernel Density for Logs
@@ -213,6 +218,7 @@ ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
   ylab("Density") +
   theme_minimal()
 ```
+
 > The histogram and kernel density plot of the logarithm of banana prices exhibit a multimodal distribution, indicating distinct clusters of price levels over time. This transformation reduces skewness and highlights the presence of multiple regimes or patterns in banana pricing, potentially linked to market structure changes or external shocks.
 
 ```{r}
@@ -233,7 +239,8 @@ ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
   ylab("Price (US $/kg)") +
   theme_minimal()
 ```
-> The scatter plot of banana prices versus lagged prices demonstrates a strong positive linear relationship, indicating high persistence in price levels over time. This suggests that banana prices exhibit significant autocorrelation, with current prices being highly dependent on their immediate past values. 
+
+> The scatter plot of banana prices versus lagged prices demonstrates a strong positive linear relationship, indicating high persistence in price levels over time. This suggests that banana prices exhibit significant autocorrelation, with current prices being highly dependent on their immediate past values.
 
 ```{r}
 # Calculate first differences of the time series
@@ -247,6 +254,7 @@ ggAcf(banana_diff$Diff_Price) +
   xlab("Lag") +
   theme_minimal()
 ```
+
 > The ACF plot of the first differences indicates that there is little significant autocorrelation at most lags, suggesting that the differencing has effectively removed the trend and made the series closer to stationarity. However, a few significant spikes at specific lags suggest some short-term dependencies or patterns still present in the data.
 
 ```{r}
@@ -260,8 +268,8 @@ banana_tsibble |>
        x = "Month") +
   theme_minimal()
 ```
-> The boxplot of banana prices by month shows relatively consistent median prices throughout the year, with minor seasonal variation as the mean line slightly decreases from February to September. The presence of outliers across months indicates occasional price volatility, but overall, monthly price distributions appear stable.
-## Insights from the Boxplot:
+
+> The boxplot of banana prices by month shows relatively consistent median prices throughout the year, with minor seasonal variation as the mean line slightly decreases from February to September. The presence of outliers across months indicates occasional price volatility, but overall, monthly price distributions appear stable. \## Insights from the Boxplot:
 
 1.  **Price Stability**:
 
@@ -277,37 +285,37 @@ banana_tsibble |>
 
     -   Outliers appear in several months, especially in **January, June, and December**, which may indicate extreme banana prices in specific years.
     -   These outliers might be caused by economic or climatic events affecting banana supply during these periods.
-```{r}
-banana_tsibble %>%
-  mutate(Month = month(Date, label = TRUE)) %>%
-  ggplot(aes(x = year(Date), y = `Banana, US`, color = Month)) +
-  geom_line(alpha = 0.5) +
-  geom_smooth(method = "loess", formula = y ~ x, se = FALSE, linewidth = 1) +
-  facet_wrap(~ Month, scales = "free_y") +
-  labs(
-    title = "Subseries Plot: Banana Prices by Month (Improved)",
-    x = "Year",
-    y = "Price (US $/kg)"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "none")
-```
-### Comments on Subseries Plot
 
-- Banana prices show an **upward trend** across all months.
-- **Higher variability** is observed in recent years.
-- Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
+    ```{r}
+    banana_tsibble %>%
+      mutate(Month = month(Date, label = TRUE)) %>%
+      ggplot(aes(x = year(Date), y = `Banana, US`, color = Month)) +
+      geom_line(alpha = 0.5) +
+      geom_smooth(method = "loess", formula = y ~ x, se = FALSE, linewidth = 1) +
+      facet_wrap(~ Month, scales = "free_y") +
+      labs(
+        title = "Subseries Plot: Banana Prices by Month (Improved)",
+        x = "Year",
+        y = "Price (US $/kg)"
+      ) +
+      theme_minimal() +
+      theme(legend.position = "none")
+    ```
 
-<<<<<<< HEAD
+    ### Comments on Subseries Plot
+
+-   Banana prices show an **upward trend** across all months.
+-   **Higher variability** is observed in recent years.
+-   Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
+
 # Mini Project in R: #2 ARIMA
 
 #### 1.Produce an STL decomposition of the data and describe the trend and seasonality.
-=======
+
 # MP part 2
 
 ### Task 1: Produce an STL decomposition of the data and describe the trend and seasonality.
 
->>>>>>> 758af59403431e92d7696edafffb5b29bbf8fb2c
 ```{r}
 banana_ts <- ts(banana_tsibble$`Banana, US`, frequency = 12, start = c(min(year(banana_tsibble$Date)), min(month(banana_tsibble$Date))))
 
@@ -333,17 +341,13 @@ summary(seasonal)
 
 cat("\nRemainder Summary:\n")
 summary(remainder)
-<<<<<<< HEAD
-
-=======
 ```
 
-- The trend shows a gradual increase in banana prices from the 1960s to the mid-2000s, followed by a sharp rise in the late 2000s and a subsequent decline after 2010. This long-term component reflects significant upward movement over time with a peak before 2010.
-- The seasonal component exhibits a consistent repeating pattern throughout the entire period, with slight fluctuations around the mean. The amplitude of these seasonal cycles remains stable, indicating regular periodic variations in banana prices, likely linked to annual production or consumption cycles.
-
+-   The trend shows a gradual increase in banana prices from the 1960s to the mid-2000s, followed by a sharp rise in the late 2000s and a subsequent decline after 2010. This long-term component reflects significant upward movement over time with a peak before 2010.
+-   The seasonal component exhibits a consistent repeating pattern throughout the entire period, with slight fluctuations around the mean. The amplitude of these seasonal cycles remains stable, indicating regular periodic variations in banana prices, likely linked to annual production or consumption cycles.
 
 ```{r}
->>>>>>> 758af59403431e92d7696edafffb5b29bbf8fb2c
+
 # Plot the remainder component from STL decomposition to observe variance
 autoplot(banana_stl$time.series[, "remainder"]) +
   ggtitle("Remainder Component from STL Decomposition") +
@@ -351,19 +355,21 @@ autoplot(banana_stl$time.series[, "remainder"]) +
   ylab("Remainder") +
   theme_minimal()
 ```
+
 ### Trend and Seasonality of Banana Prices
 
 The analysis shows:
 
-- **Trend**: Banana prices have been steadily increasing over the years, reaching their highest point at 1.62 $/kg before dropping in 2024. On average, prices have trended around 0.54 $/kg over time.
+-   **Trend**: Banana prices have been steadily increasing over the years, reaching their highest point at 1.62 \$/kg before dropping in 2024. On average, prices have trended around 0.54 \$/kg over time.
 
-- **Seasonality**: Prices follow a clear yearly pattern, going slightly up and down throughout each year. These changes balance out, with an average seasonal effect of zero.
+-   **Seasonality**: Prices follow a clear yearly pattern, going slightly up and down throughout each year. These changes balance out, with an average seasonal effect of zero.
 
-- **Remainder**: There are also some unpredictable short-term changes in prices. These jumps are usually small, but sometimes they are larger, ranging from -0.18 to 0.26 $/kg.
+-   **Remainder**: There are also some unpredictable short-term changes in prices. These jumps are usually small, but sometimes they are larger, ranging from -0.18 to 0.26 \$/kg.
 
 This means banana prices generally grow over time, follow a seasonal pattern each year, and occasionally show unexpected short-term changes.
 
 #### 2.Do the data need transforming? If so, find a suitable transformation.
+
 ```{r}
 # Perform a Box-Cox transformation test
 lambda <- BoxCox.lambda(banana_ts)
@@ -380,15 +386,13 @@ if (abs(lambda - 1) > 0.1) {
   cat("No transformation needed as lambda is close to 1.")
 }
 ```
-<<<<<<< HEAD
+
 ## Data Transformation
 
 The data required transformation because its variance was not stable over time, as seen in the original time series plot. A **Box-Cox transformation** was applied with a lambda value of -0.318, which successfully stabilized the variance, making the data suitable for further analysis.
 
 #### 3.Are the data stationary? If not, find an appropriate differencing which yields stationary data. Please discuss if you need seasonal differencing (and do if necessary)
-=======
 
->>>>>>> 758af59403431e92d7696edafffb5b29bbf8fb2c
 ```{r}
 # Plot ACF and PACF of transformed data
 ggAcf(banana_ts_transformed) +
@@ -399,7 +403,9 @@ ggPacf(banana_ts_transformed) +
   ggtitle("PACF of Transformed Data") +
   theme_minimal()
 ```
+
 The ACF and PACF plots show the data is not stationary because there is strong autocorrelation. To make it stationary, we need to apply first-order differencing to remove the trend and seasonal differencing (lag 12) to handle yearly patterns.
+
 ```{r}
 # Perform Augmented Dickey-Fuller Test
 adf_test <- suppressWarnings(adf.test(banana_ts_transformed, alternative = "stationary"))
@@ -421,15 +427,17 @@ ggPacf(banana_ts_diff) +
 adf_test_diff <- suppressWarnings(adf.test(banana_ts_diff, alternative = "stationary"))
 cat("ADF Test on Differenced Data p-value:", adf_test_diff$p.value, "\n")
 ```
+
 ### Seasonal Differencing and Stationarity Check
 
-Seasonal differencing was applied to the banana price data to address non-stationarity.  
-- The **ACF** shows reduced autocorrelation, and the **PACF** has a sharp cutoff, indicating improved stationarity.  
-- The **ADF test p-value** is **0.01**, confirming the data is stationary after differencing.  
+Seasonal differencing was applied to the banana price data to address non-stationarity.\
+- The **ACF** shows reduced autocorrelation, and the **PACF** has a sharp cutoff, indicating improved stationarity.\
+- The **ADF test p-value** is **0.01**, confirming the data is stationary after differencing.
 
 The data is now ready for ARIMA modeling.
 
 #### 4.Identify a couple of ARIMA models (including auto ARIMA) that might be useful in describing the time series, by examining ACF/PACF. Which of your models is the best according to their AICc values?
+
 ```{r}
 # Automatically identify the best ARIMA model
 auto_arima_model <- auto.arima(banana_ts_transformed, seasonal = TRUE)
@@ -444,25 +452,26 @@ cat("AICc for Auto ARIMA:", AICc(auto_arima_model), "\n")
 cat("AICc for ARIMA(1,1,1)(0,0,2):", AICc(arima_model_1), "\n")
 cat("AICc for ARIMA(2,1,2)(1,1,1):", AICc(arima_model_2), "\n")
 ```
+
 ## Model Selection Comments
 
-To select the best ARIMA model, we analyzed the ACF and PACF of differenced data and used their patterns to determine parameters. 
+To select the best ARIMA model, we analyzed the ACF and PACF of differenced data and used their patterns to determine parameters.
 
-- **ARIMA(1,1,1)(0,0,2):**
-  - **p (AR order):** Lag 1 is significant in the PACF.
-  - **d (differencing):** Stationarity achieved with first differencing.
-  - **q (MA order):** Lag 1 is significant in the ACF.
-  - **P, D, Q (seasonal):** Seasonal MA lag 2 based on ACF; no seasonal AR.
-
-- **ARIMA(2,1,2)(1,1,1):**
-  - **p (AR order):** PACF suggests lags 1 and 2.
-  - **d (differencing):** Stationarity achieved with first differencing.
-  - **q (MA order):** ACF suggests lags 1 and 2.
-  - **P, D, Q (seasonal):** Seasonal AR (lag 1), differencing, and MA (lag 1).
+-   **ARIMA(1,1,1)(0,0,2):**
+    -   **p (AR order):** Lag 1 is significant in the PACF.
+    -   **d (differencing):** Stationarity achieved with first differencing.
+    -   **q (MA order):** Lag 1 is significant in the ACF.
+    -   **P, D, Q (seasonal):** Seasonal MA lag 2 based on ACF; no seasonal AR.
+-   **ARIMA(2,1,2)(1,1,1):**
+    -   **p (AR order):** PACF suggests lags 1 and 2.
+    -   **d (differencing):** Stationarity achieved with first differencing.
+    -   **q (MA order):** ACF suggests lags 1 and 2.
+    -   **P, D, Q (seasonal):** Seasonal AR (lag 1), differencing, and MA (lag 1).
 
 The best model, **ARIMA(2,1,2)(1,1,1)**, had the lowest AICc, showing a better balance of fit and complexity compared to Auto ARIMA and ARIMA(1,1,1)(0,0,2).
 
 #### 5.Estimate the parameters of your preferred model and do diagnostic testing on the residuals. Do the residuals resemble white noise? If not, try to find another ARIMA model which fits better.
+
 ```{r}
 # Load necessary libraries
 library(forecast)
@@ -536,19 +545,23 @@ if (ljung_box_chosen$p.value < 0.05) {
   cat("\nResiduals resemble white noise. No further refinement needed.\n")
 }
 ```
+
 ## Residual Diagnostics Comments
 
 ### Chosen Model: ARIMA(2,1,2)(1,1,1)
-- **Ljung-Box Test p-value**: 0.0026 indicates residuals do not resemble white noise. Refinement is needed.
-- **ACF/PACF Diagnostics**: Residual plots show significant autocorrelations, suggesting room for improvement.
+
+-   **Ljung-Box Test p-value**: 0.0026 indicates residuals do not resemble white noise. Refinement is needed.
+-   **ACF/PACF Diagnostics**: Residual plots show significant autocorrelations, suggesting room for improvement.
 
 ### Refined Model: ARIMA(2,1,3)(1,1,1)
-- **Ljung-Box Test p-value**: 0.1245 confirms residuals resemble white noise.
-- **ACF/PACF Diagnostics**: No significant autocorrelations, indicating the model is a good fit.
+
+-   **Ljung-Box Test p-value**: 0.1245 confirms residuals resemble white noise.
+-   **ACF/PACF Diagnostics**: No significant autocorrelations, indicating the model is a good fit.
 
 **Conclusion**: The refined model ARIMA(2,1,3)(1,1,1) is better, as residuals are uncorrelated and satisfy white noise conditions.
 
 #### 6. Assuming you have a list of possible models, please pick up your model based on how accurate they predict, using the training and test parts of your data.
+
 ```{r}
 # Load necessary libraries
 library(forecast)
@@ -612,6 +625,7 @@ autoplot(forecast(best_model), series = "Forecast") +
   ylab("Banana Prices") +
   theme_minimal()
 ```
+
 ## Model Accuracy and Selection
 
 We evaluated three ARIMA models—ARIMA(2,1,2)(1,1,1), ARIMA(2,1,3)(1,1,1), and ARIMA(3,1,2)(1,1,1)—using RMSE and other accuracy metrics on training and test sets. Based on RMSE, ARIMA(2,1,2)(1,1,1) was selected as the best model since it provided the lowest RMSE value on the test set.
@@ -619,7 +633,9 @@ We evaluated three ARIMA models—ARIMA(2,1,2)(1,1,1), ARIMA(2,1,3)(1,1,1), and 
 The forecast plot demonstrates how the chosen model predicts test data, capturing the overall trend while slightly diverging in some parts. Confidence intervals highlight uncertainty, but the model remains robust for predictive purposes.
 
 #### 7.Eventually, do out-of-sample forecast for the next month. How many months of forecasts
+
 do you think are sufficiently accurate to be usable?
+
 ```{r}
 # Step 1: Fit the best model to the full dataset
 final_model <- Arima(banana_ts_transformed, order = c(2, 1, 2), seasonal = c(1, 1, 1))
@@ -647,11 +663,9 @@ print(forecast_results)
 # Step 6: Short Explanation
 cat("The forecast is suitable for short-term predictions, typically 3-6 months, with higher uncertainty for longer horizons.")
 ```
+
 ## Final Comments on Forecasting
 
-The **ARIMA(2,1,2)(1,1,1)** model was used to generate forecasts for the next 12 months. The forecast results show:
-- **Short-term accuracy**: Predictions for the first 3-6 months are reliable, as evidenced by narrower confidence intervals.
-- **Long-term uncertainty**: Beyond 6 months, the confidence intervals widen significantly, reflecting increased uncertainty in predictions.
+The **ARIMA(2,1,2)(1,1,1)** model was used to generate forecasts for the next 12 months. The forecast results show: - **Short-term accuracy**: Predictions for the first 3-6 months are reliable, as evidenced by narrower confidence intervals. - **Long-term uncertainty**: Beyond 6 months, the confidence intervals widen significantly, reflecting increased uncertainty in predictions.
 
 This suggests that the model is suitable for short-term planning, while long-term forecasts should be interpreted with caution.
-
