@@ -1,0 +1,576 @@
+---
+title: "Banana,US"
+author: "Team 1 (Rohozhynskyi, Nezghovorov, Matkivskyi, Bobrov, Bobrovnik)"
+date: "01/21/2025"
+
+execute:
+  echo: false
+  
+format: 
+  html:
+    math: true
+    toc: true  # Enable the table of contents
+    toc-title: "Contents"  # Set the TOC title
+    toc-depth: 2  # Limit TOC depth level
+    code-fold: true  # Allow code blocks to be collapsible
+    code-tools: false  # Show tools for code blocks (like copy button)
+    code-copy: true  # Enable copy button for code blocks
+    theme: Materia  # Use the "Lux" Bootswatch theme
+    smooth-scroll: true  # Enable smooth scrolling for TOC links
+    embed-resources: true  # Embed external resources directly
+---
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+
+# Set a CRAN mirror
+options(repos = c(CRAN = "https://cran.rstudio.com"))
+
+# install.packages('ggplot2')
+# install.packages('ggthemes')
+# install.packages("stargazer")
+# install.packages("wooldridge")
+# install.packages("knitr")
+# install.packages("modelsummary")
+# install.packages("naniar")
+# install.packages("kableExtra")
+# install.packages("lmtest")
+# install.packages("tsibble")
+# install.packages("fable")
+# install.packages("lubridate")
+# install.packages("forecast")
+# install.packages("urca")
+# install.packages("broom")
+# install.packages("plm")
+# install.packages("fabletools")
+# install.packages("lubridate")
+# install.packages("plotly")
+# install.packages("fpp3")
+# install.packages("MuMIn")
+
+
+
+
+
+library(ggplot2)
+library(ggthemes)
+library(stargazer)
+library(wooldridge)
+library(knitr)
+library(dplyr)
+library(car)
+library(modelsummary)
+library(readxl)
+library(naniar)
+library(kableExtra)
+library(lmtest)
+library(tidyr)
+library(tsibble)
+library(lubridate)
+library(forecast)
+library(urca)
+library(broom)
+library(plm)
+library(readr)
+library(fable)
+library(fabletools)
+library(lubridate)
+library(plotly)
+library(gganimate)
+library(fpp3)
+library(tseries)
+library(MuMIn)
+
+invisible(Sys.setlocale("LC_TIME", "en_US.UTF-8")) # Set months in English without output
+```
+
+# MP part 1
+
+```{r}
+
+banana_tsibble <- suppressMessages(
+  read_csv("Cleaned_Commodity_Prices.csv", show_col_types = FALSE) |>
+    select(Year, Month, `Banana, US`) |>
+    mutate(Date = yearmonth(paste(Year, Month, sep = "-"))) |>
+    select(Date, `Banana, US`) |>                             
+    as_tsibble(index = Date)
+)
+```
+
+```{r}
+
+summary <- tibble(
+  Metric = c("Start Year", "End Year", "Total Observations", "Min Price", "Max Price", "Mean Price", "Standard Deviation"),
+  Value = c(
+    format(as.integer(min(year(banana_tsibble$Date))), nsmall = 0),
+    format(as.integer(max(year(banana_tsibble$Date))), nsmall = 0),
+    format(nrow(banana_tsibble), nsmall = 0),
+    round(min(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
+    round(max(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
+    round(mean(banana_tsibble$`Banana, US`, na.rm = TRUE), 2),
+    round(sd(banana_tsibble$`Banana, US`, na.rm = TRUE), 2)
+  )
+)
+
+knitr::kable(summary, col.names = c("Metric", "Value"), caption = "Banana Prices Dataset")
+```
+
+> The World Bank compiled and published US banana price data in Commodity Markets Outlook. These prices are in US dollars per kilogram, represent the average market rates from global banana trade.
+
+```{r}
+# Create an interactive line plot with plotly
+
+p <- ggplot(banana_tsibble, aes(x = Date, y = `Banana, US`)) +
+  geom_line(color = "blue") +
+  ggtitle("Banana Prices Over Time (Levels)") +
+  xlab("Date") +
+  ylab("Price (US $/kg)") +
+  theme_minimal()
+
+# Convert ggplot to an interactive plotly object
+ggplotly(p) %>%
+  layout(title = "Banana Prices Over Time",
+         xaxis = list(title = "Date"),
+         yaxis = list(title = "Price (US $/kg)"))
+```
+
+### Historical Events Affecting Banana Prices
+
+-   **1973–1979**: Oil crises led to increased transportation costs, causing price fluctuations.
+-   **Late 1990s**: Weather events (El Niño/La Niña) and changing trade policies caused instability.
+-   **2005–2015**: Steep price increase due to rising production costs, hurricanes, and higher global demand.
+-   **2022**: Sharp price drop driven by COVID-19 supply chain disruptions, inflation, and possible overproduction.
+-   **2024**: Post COVID restore.
+
+The banana market is influenced by weather conditions, geopolitical factors, pest outbreaks, and supply chain dynamics.
+
+```{r}
+# Create new columns for logs and first differences
+banana_tsibble <- banana_tsibble %>%
+  mutate(
+    Log_Price = log(`Banana, US`),
+    Diff_Price = difference(`Banana, US`)
+  )
+
+# Log-transformed prices
+ggplot(banana_tsibble, aes(x = Date, y = Log_Price)) +
+  geom_line(color = "darkgreen") +
+  ggtitle("Log of Banana Prices Over Time") +
+  xlab("Date") +
+  ylab("Log Price (Log US $/kg)") +
+  theme_minimal()
+
+banana_tsibble_diff <- banana_tsibble %>% filter(!is.na(Diff_Price))
+
+# Plot first differences
+ggplot(banana_tsibble_diff, aes(x = Date, y = Diff_Price)) +
+  geom_line(color = "red") +
+  ggtitle("First Differences of Banana Prices Over Time") +
+  xlab("Date") +
+  ylab("Price Difference (US $/kg)") +
+  theme_minimal()
+```
+
+> Log of Banana Prices Over Time Сhart reveals a long-term upward trend in banana prices, indicating consistent growth in proportional rather than nominal changes.<br>
+
+> First Differences of Banana Prices Over Time reveals significant volatility in price changes over time, with notable spikes around the 2000s and 2020. The fluctuations become more pronounced as time progresses, suggesting an increase in the variability of price adjustments in the later years.
+
+```{r}
+banana_tsibble |>
+  mutate(Month = month(Date, label = TRUE),   # Extract month as a factor
+         Year = year(Date),                   # Extract year
+         Decade = floor(Year / 10) * 10) |>   # Create a decade variable
+  filter(Year %% 3 == 0) |>                   # Select only years divisible by 3
+  ggplot(aes(x = Month, y = `Banana, US`, color = factor(Year), group = Year)) +
+  geom_line() +
+  labs(y = "$ (USD)",
+       title = "Seasonal Plot: Banana Prices in US by Decade (Sampled Years)") +
+  facet_wrap(~ Decade, scales = "fixed", ncol = 2) +  # Two columns for better readability
+  theme_minimal() +
+  theme(legend.position = "none",               # Remove the legend
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+> The seasonal plot shows that banana prices in the US exhibit minimal seasonal variation across decades, with a slight tendency for prices to peak around mid-year in some decades, such as the 2000s and 2020s. Overall, the trend reflects a relatively stable price pattern within each year, likely due to consistent supply and demand dynamics for bananas.
+
+```{r}
+# Histogram and Kernel Density for Levels
+ggplot(banana_tsibble, aes(x = `Banana, US`)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "lightblue", color = "black") +
+  geom_density(alpha = 0.4, fill = "blue") +
+  ggtitle("Histogram and Kernel Density of Banana Prices (Levels)") +
+  xlab("Price (US $/kg)") +
+  ylab("Density") +
+  theme_minimal()
+```
+
+> The histogram and kernel density plot reveal that banana prices in the US are positively skewed, with the majority of prices clustering below \$0.5 per kilogram. However, there is a long tail extending toward higher price levels, indicating occasional periods of elevated prices that are less frequent.
+
+```{r}
+# Histogram and Kernel Density for Logs
+ggplot(banana_tsibble, aes(x = log(`Banana, US`))) +
+  geom_histogram(aes(y = after_stat(density)), bins = 30, fill = "lightgreen", color = "black") +
+  geom_density(alpha = 0.4, fill = "green") +
+  ggtitle("Histogram and Kernel Density of Log-Banana Prices") +
+  xlab("Log Price (Log US $/kg)") +
+  ylab("Density") +
+  theme_minimal()
+```
+
+> The histogram and kernel density plot of the logarithm of banana prices exhibit a multimodal distribution, indicating distinct clusters of price levels over time. This transformation reduces skewness and highlights the presence of multiple regimes or patterns in banana pricing, potentially linked to market structure changes or external shocks.
+
+```{r}
+# Ensure banana_tsibble is correctly formatted as a tsibble
+banana_tsibble <- banana_tsibble %>%
+  as_tsibble(index = Date)
+
+# Create lagged values
+banana_lagged <- banana_tsibble %>%
+  mutate(Lag_1 = dplyr::lag(`Banana, US`, 1)) %>%  # Use dplyr::lag for clarity
+  filter(!is.na(Lag_1))                            # Remove NA values caused by lagging
+
+# Scatter plot of levels vs lagged levels
+ggplot(banana_lagged, aes(x = Lag_1, y = `Banana, US`)) +
+  geom_point(color = "blue", alpha = 0.5) +        # Add transparency for better visualization
+  ggtitle("Scatter Plot: Banana Prices vs Lagged Banana Prices") +
+  xlab("Lagged Price (US $/kg)") +
+  ylab("Price (US $/kg)") +
+  theme_minimal()
+```
+
+> The scatter plot of banana prices versus lagged prices demonstrates a strong positive linear relationship, indicating high persistence in price levels over time. This suggests that banana prices exhibit significant autocorrelation, with current prices being highly dependent on their immediate past values.
+
+```{r}
+# Calculate first differences of the time series
+banana_diff <- banana_tsibble %>%
+  mutate(Diff_Price = difference(`Banana, US`)) %>%
+  filter(!is.na(Diff_Price))
+
+ggAcf(banana_diff$Diff_Price) +
+  ggtitle("Autocorrelation Function (ACF) of First Differences") +
+  ylab("ACF") +
+  xlab("Lag") +
+  theme_minimal()
+```
+
+> The ACF plot of the first differences indicates that there is little significant autocorrelation at most lags, suggesting that the differencing has effectively removed the trend and made the series closer to stationarity. However, a few significant spikes at specific lags suggest some short-term dependencies or patterns still present in the data.
+
+```{r}
+banana_tsibble |>
+  mutate(Month = month(Date, label = TRUE)) |>  # Extract Month as factor
+  ggplot(aes(x = Month, y = `Banana, US`)) +
+  geom_boxplot(fill = "lightblue", alpha = 0.6) +  # Boxplot
+  stat_summary(fun = mean, geom = "line", aes(group = 1), color = "blue", linewidth = 1) +  # Mean line
+  labs(y = "$/kg", 
+       title = "Boxplot of Banana Prices by Month with Mean Line",
+       x = "Month") +
+  theme_minimal()
+```
+
+> The boxplot of banana prices by month shows relatively consistent median prices throughout the year, with minor seasonal variation as the mean line slightly decreases from February to September. The presence of outliers across months indicates occasional price volatility, but overall, monthly price distributions appear stable. \## Insights from the Boxplot:
+
+1.  **Price Stability**:
+
+    -   Most boxes have a similar size and position, indicating relatively stable banana prices throughout the year.
+    -   There are no sharp changes in medians between months, meaning average banana prices remain at a similar level year-round.
+
+2.  **Price Variability**:
+
+    -   The whiskers are quite long, showing significant variability in prices across different years.
+    -   The highest variability is observed in **January, June, and September**, as their whiskers are the longest, and there are several outliers.
+
+3.  **Outliers**:
+
+    -   Outliers appear in several months, especially in **January, June, and December**, which may indicate extreme banana prices in specific years.
+    -   These outliers might be caused by economic or climatic events affecting banana supply during these periods.
+
+    ```{r}
+    banana_tsibble %>%
+      mutate(Month = month(Date, label = TRUE)) %>%
+      ggplot(aes(x = year(Date), y = `Banana, US`, color = Month)) +
+      geom_line(alpha = 0.5) +
+      geom_smooth(method = "loess", formula = y ~ x, se = FALSE, linewidth = 1) +
+      facet_wrap(~ Month, scales = "free_y") +
+      labs(
+        title = "Subseries Plot: Banana Prices by Month (Improved)",
+        x = "Year",
+        y = "Price (US $/kg)"
+      ) +
+      theme_minimal() +
+      theme(legend.position = "none")
+    ```
+
+    ### Comments on Subseries Plot
+
+-   Banana prices show an **upward trend** across all months.
+-   **Higher variability** is observed in recent years.
+-   Prices exhibit a **consistent seasonal pattern** with peaks occurring around similar times each year.
+
+# Mini Project in R part 2: ARIMA
+
+### Task 1: Produce an STL decomposition of the data and describe the trend and seasonality.
+
+```{r}
+banana_ts <- ts(banana_tsibble$`Banana, US`, frequency = 12, start = c(min(year(banana_tsibble$Date)), min(month(banana_tsibble$Date))))
+
+# Perform STL decomposition
+banana_stl <- stl(banana_ts, s.window = "periodic")
+
+# Plot the STL decomposition
+autoplot(banana_stl) +
+  ggtitle("STL Decomposition of Banana Prices") +
+  theme_minimal()
+  
+# Extract and describe components
+trend <- banana_stl$time.series[, "trend"]
+seasonal <- banana_stl$time.series[, "seasonal"]
+remainder <- banana_stl$time.series[, "remainder"]
+
+# Summary of components
+cat("Trend Summary:\n")
+summary(trend)
+
+cat("\nSeasonality Summary:\n")
+summary(seasonal)
+
+cat("\nRemainder Summary:\n")
+summary(remainder)
+```
+```{r}
+# Завантаження необхідних бібліотек
+if (!requireNamespace("quantmod")) install.packages("quantmod")
+library(quantmod)
+library(ggplot2)
+
+# Завантаження даних CPI з FRED
+getSymbols("CPIAUCSL", src = "FRED")  # CPI для всіх міських споживачів
+cpi_data <- CPIAUCSL
+
+# Преобразуем в временной ряд с ежемесячной частотой
+cpi_ts <- ts(cpi_data, start = c(1947, 1), frequency = 12)
+
+# Обмеження даних CPI до діапазону даних бананів
+banana_ts <- ts(banana_tsibble$`Banana, US`, frequency = 12, start = c(min(year(banana_tsibble$Date)), min(month(banana_tsibble$Date))))
+cpi_ts <- window(cpi_ts, start = start(banana_ts), end = end(banana_ts))
+
+# Огляд CPI
+cat("CPI Time Series Summary:\n")
+summary(cpi_ts)
+
+# Побудова графіка CPI
+autoplot(cpi_ts) +
+  ggtitle("Consumer Price Index (CPI)") +
+  theme_minimal()
+
+# Перевірка відповідності довжин рядів
+cat("\nLength of Banana Prices Time Series:", length(banana_ts), "\n")
+cat("Length of CPI Time Series:", length(cpi_ts), "\n")
+```
+```{r}
+# Коригування цін на банани за інфляцією
+real_banana_prices <- banana_ts / cpi_ts
+
+# Побудова графіка реальних цін
+autoplot(real_banana_prices) +
+  ggtitle("Real Banana Prices (Adjusted for Inflation)") +
+  theme_minimal()
+```
+```{r}
+# Apply logarithmic transformation to the real banana prices
+log_banana_prices <- log(real_banana_prices)
+
+# Plot the log-transformed data
+autoplot(log_banana_prices) +
+  ggtitle("Log-Transformed Real Banana Prices") +
+  theme_minimal()
+
+# Summary of log-transformed data
+cat("Summary of Log-Transformed Data:\n")
+summary(log_banana_prices)
+```
+```{r}
+# Perform ADF test
+adf_test <- adf.test(log_banana_prices, alternative = "stationary")
+cat("ADF Test p-value:", adf_test$p.value, "\n")
+
+# Perform KPSS test
+kpss_test <- kpss.test(log_banana_prices)
+cat("KPSS Test p-value:", kpss_test$p.value, "\n")
+```
+```{r}
+# Застосовуємо перше диференціювання
+diff_log_banana_prices <- diff(log_banana_prices)
+
+# Перевіряємо диференційовані дані
+autoplot(diff_log_banana_prices) +
+  ggtitle("First-Differenced Log-Transformed Banana Prices") +
+  theme_minimal()
+
+# Повторюємо ADF і KPSS тести
+adf_test_diff <- adf.test(diff_log_banana_prices, alternative = "stationary")
+cat("ADF Test p-value (Differenced Data):", adf_test_diff$p.value, "\n")
+
+kpss_test_diff <- kpss.test(diff_log_banana_prices)
+cat("KPSS Test p-value (Differenced Data):", kpss_test_diff$p.value, "\n")
+```
+```{r}
+# Побудова ACF і PACF
+ggAcf(diff_log_banana_prices) +
+  ggtitle("ACF of Differenced Log-Transformed Banana Prices") +
+  theme_minimal()
+
+ggPacf(diff_log_banana_prices) +
+  ggtitle("PACF of Differenced Log-Transformed Banana Prices") +
+  theme_minimal()
+```
+```{r}
+# Список ARIMA моделей для тестування
+models <- list(
+  list(order = c(1, 1, 1)),
+  list(order = c(2, 1, 1)),
+  list(order = c(2, 1, 2)),
+  list(order = c(3, 1, 2)),
+  list(order = c(3, 1, 3))
+)
+
+# Ініціалізація таблиці результатів
+results <- data.frame(
+  Model = character(),
+  AICc = numeric(),
+  Ljung_Box_pvalue = numeric(),
+  Durbin_Watson_pvalue = numeric()
+)
+
+# Цикл для оцінки моделей
+for (model_params in models) {
+  # Побудова ARIMA моделі
+  model <- Arima(diff_log_banana_prices, order = model_params$order)
+  
+  # AICc
+  aicc <- AICc(model)
+  
+  # Ljung-Box тест
+  ljung_box <- stats::Box.test(residuals(model), lag = 12, fitdf = length(model$coef), type = "Ljung-Box")
+  
+  # Durbin-Watson тест
+  dw_test <- dwtest(residuals(model) ~ 1)
+  
+  # Додавання результатів
+  results <- rbind(
+    results,
+    data.frame(
+      Model = paste0("ARIMA(", paste(model_params$order, collapse = ","), ")"),
+      AICc = aicc,
+      Ljung_Box_pvalue = ljung_box$p.value,
+      Durbin_Watson_pvalue = dw_test$p.value
+    )
+  )
+}
+
+# Сортування результатів за AICc
+results <- results[order(results$AICc), ]
+
+# Відображення таблиці
+library(knitr)
+kable(results, caption = "Comparison of ARIMA Models Based on AICc, Ljung-Box Test, and Durbin-Watson Test")
+
+# Вибір найкращої моделі (наприклад, ARIMA(2,1,2))
+best_model <- Arima(diff_log_banana_prices, order = c(3, 1, 3))
+cat("\nSummary of Best Model:\n")
+summary(best_model)
+
+# Діагностика залишків найкращої моделі
+checkresiduals(best_model)
+```
+```{r}
+# Початкові дані: чисті ціни на банани
+library(forecast)
+library(lmtest)
+library(ggplot2)
+library(knitr)
+
+# Логарифмування цін
+log_banana_prices <- log(banana_ts)
+
+# Перше диференціювання логарифмованих даних
+diff_log_banana_prices <- diff(log_banana_prices, differences = 1)
+
+# Вирівнюємо CPI до даних бананів
+cpi_ts_aligned <- window(cpi_ts, start = start(diff_log_banana_prices), end = end(diff_log_banana_prices))
+
+# Перевірка відповідності довжин
+cat("Length of diff_log_banana_prices:", length(diff_log_banana_prices), "\n")
+cat("Length of cpi_ts_aligned:", length(cpi_ts_aligned), "\n")
+
+# Список моделей для тестування
+models <- list(
+  list(order = c(1, 1, 1)),
+  list(order = c(2, 1, 1)),
+  list(order = c(2, 1, 2)),
+  list(order = c(3, 1, 2)),
+  list(order = c(3, 1, 3)),
+  list(order = c(4, 1, 3)),
+  list(order = c(4, 1, 4))
+)
+
+# Ініціалізація результатів
+results <- data.frame(
+  Model = character(),
+  AICc = numeric(),
+  Ljung_Box_pvalue = numeric(),
+  Durbin_Watson_pvalue = numeric()
+)
+
+# Цикл для оцінки моделей
+for (model_params in models) {
+  tryCatch({
+    # Побудова ARIMAX моделі
+    model <- Arima(diff_log_banana_prices, order = model_params$order, xreg = cpi_ts_aligned)
+    
+    # AICc
+    aicc <- AICc(model)
+    
+    # Ljung-Box тест
+    ljung_box <- stats::Box.test(residuals(model), lag = 12, fitdf = length(model$coef), type = "Ljung-Box")
+    
+    # Durbin-Watson тест
+    dw_test <- dwtest(residuals(model) ~ 1)
+    
+    # Додаємо результати у таблицю
+    results <- rbind(
+      results,
+      data.frame(
+        Model = paste0("ARIMAX(", paste(model_params$order, collapse = ","), ")"),
+        AICc = aicc,
+        Ljung_Box_pvalue = ljung_box$p.value,
+        Durbin_Watson_pvalue = dw_test$p.value
+      )
+    )
+  }, error = function(e) {
+    message("Error for model: ", paste(model_params$order, collapse = ","))
+  })
+}
+
+# Сортування результатів за AICc
+results <- results[order(results$AICc), ]
+
+# Відображення таблиці
+kable(results, caption = "Comparison of ARIMAX Models Based on AICc, Ljung-Box Test, and Durbin-Watson Test")
+
+# Резюме для найкращої моделі
+best_model <- Arima(diff_log_banana_prices, order = as.numeric(strsplit(results$Model[1], "[(),]")[[1]][2:4]), xreg = cpi_ts_aligned)
+cat("\nSummary of Best Model:\n")
+summary(best_model)
+
+# Перевірка залишків
+checkresiduals(best_model)
+
+# Графічне відображення
+autoplot(best_model$residuals) +
+  ggtitle("Residuals of Best ARIMAX Model") +
+  theme_minimal()
+```
+
+
