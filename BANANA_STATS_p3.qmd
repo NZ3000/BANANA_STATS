@@ -49,7 +49,8 @@ options(repos = c(CRAN = "https://cran.rstudio.com"))
 # install.packages("plotly")
 # install.packages("fpp3")
 # install.packages("MuMIn")
-
+# install.packages("FinTS")
+# install.packages("rugarch")
 
 
 
@@ -83,6 +84,8 @@ library(fpp3)
 library(tseries)
 library(MuMIn)
 library(cowplot)
+library(FinTS)
+library(rugarch)
 
 invisible(Sys.setlocale("LC_TIME", "en_US.UTF-8")) # Set months in English without output
 ```
@@ -453,18 +456,16 @@ plot_grid(
 )
 ```
 
-## Model Selection 
+## Model Selection
 
-1. **Original Data**:
-   - ADF Test p-value > 0.05 and KPSS Test p-value < 0.05 indicate the original data is non-stationary.
-   - Significant lags in both ACF and PACF further confirm the need for differencing.
-
-2. **Differenced Data**:
-   - After first differencing, ADF Test p-value < 0.05 and KPSS Test p-value > 0.05 suggest the data is now stationary.
-   - ACF shows significant spikes at initial lags, and PACF has a sharp cutoff, indicating potential ARIMA models.
-   
-3. **Next Steps**:
-   - Based on ACF and PACF, we will test ARIMA models such as (p,d,q) = (2,1,2) or (3,1,2) for further analysis.
+1.  **Original Data**:
+    -   ADF Test p-value \> 0.05 and KPSS Test p-value \< 0.05 indicate the original data is non-stationary.
+    -   Significant lags in both ACF and PACF further confirm the need for differencing.
+2.  **Differenced Data**:
+    -   After first differencing, ADF Test p-value \< 0.05 and KPSS Test p-value \> 0.05 suggest the data is now stationary.
+    -   ACF shows significant spikes at initial lags, and PACF has a sharp cutoff, indicating potential ARIMA models.
+3.  **Next Steps**:
+    -   Based on ACF and PACF, we will test ARIMA models such as (p,d,q) = (2,1,2) or (3,1,2) for further analysis.
 
 ```{r}
 # Automatically identify the best ARIMA model
@@ -480,6 +481,7 @@ cat("AICc for Auto ARIMA:", AICc(auto_arima_model), "\n")
 cat("AICc for ARIMA(2,1,2):", AICc(arima_model_1), "\n")
 cat("AICc for ARIMA(3,1,2):", AICc(arima_model_2), "\n")
 ```
+
 ### Model Comparison Summary
 
 Based on the AICc values, **ARIMA(3,1,2)** provides the best fit for the differenced data `banana_ts_diff`. This model should be considered for further analysis, with residual diagnostics to confirm its validity.
@@ -515,20 +517,20 @@ checkresiduals(chosen_model)
 ### Model Diagnostics and Conclusion
 
 #### Residual Diagnostics
-1. **ACF and PACF of Residuals**:
-   - The ACF and PACF plots show no significant autocorrelation at most lags.
-   - This indicates that the residuals behave like white noise, which is a key assumption of ARIMA models.
 
-2. **Residual Time Series Plot**:
-   - The residuals appear to fluctuate around zero with no visible trends or structural breaks.
-   - This confirms the stationarity of the residuals.
-
-3. **Histogram of Residuals**:
-   - The histogram suggests that the residuals are approximately normally distributed, with the density curve closely following the histogram.
+1.  **ACF and PACF of Residuals**:
+    -   The ACF and PACF plots show no significant autocorrelation at most lags.
+    -   This indicates that the residuals behave like white noise, which is a key assumption of ARIMA models.
+2.  **Residual Time Series Plot**:
+    -   The residuals appear to fluctuate around zero with no visible trends or structural breaks.
+    -   This confirms the stationarity of the residuals.
+3.  **Histogram of Residuals**:
+    -   The histogram suggests that the residuals are approximately normally distributed, with the density curve closely following the histogram.
 
 #### Model Selection
-- Based on the AICc value (-497.6702), the ARIMA(3,1,2) model has good explanatory power compared to alternative models.
-- The Ljung-Box p-value (1.923783e-08) indicates that the residuals show minor autocorrelation, but within acceptable limits given the overall diagnostics.
+
+-   Based on the AICc value (-497.6702), the ARIMA(3,1,2) model has good explanatory power compared to alternative models.
+-   The Ljung-Box p-value (1.923783e-08) indicates that the residuals show minor autocorrelation, but within acceptable limits given the overall diagnostics.
 
 ```{r}
 # Split data into training and test sets
@@ -593,22 +595,26 @@ autoplot(forecast(best_model), series = "Forecast") +
 # Analysis of ARIMA Models for Banana Prices
 
 ## Final Model Selection
-- We tested several ARIMA models using differenced data to ensure stationarity.
-- Based on the **AICc**, **Ljung-Box Test**, and **Durbin-Watson Test**, the final chosen model is **ARIMA(3,1,2)**.
-- This model has the lowest RMSE on the test set, indicating its superior forecasting accuracy.
+
+-   We tested several ARIMA models using differenced data to ensure stationarity.
+-   Based on the **AICc**, **Ljung-Box Test**, and **Durbin-Watson Test**, the final chosen model is **ARIMA(3,1,2)**.
+-   This model has the lowest RMSE on the test set, indicating its superior forecasting accuracy.
 
 ## Observations on Residuals
-- The ACF and PACF plots of residuals show no significant autocorrelation, suggesting that the model captures most of the data's structure.
-- The histogram of residuals indicates approximate normality, which validates the model's assumptions.
-- The Ljung-Box test, while yielding a small p-value, still confirms that the residuals are largely uncorrelated.
+
+-   The ACF and PACF plots of residuals show no significant autocorrelation, suggesting that the model captures most of the data's structure.
+-   The histogram of residuals indicates approximate normality, which validates the model's assumptions.
+-   The Ljung-Box test, while yielding a small p-value, still confirms that the residuals are largely uncorrelated.
 
 ## Forecast and Test Data Comparison
-- The plot above demonstrates the model's performance in forecasting test data. 
-- The forecast aligns closely with the actual values, showing the model's effectiveness in predicting price movements.
+
+-   The plot above demonstrates the model's performance in forecasting test data.
+-   The forecast aligns closely with the actual values, showing the model's effectiveness in predicting price movements.
 
 ## Conclusion
-- The ARIMA(3,1,2) model provides the best balance between fit and simplicity.
-- It will be used for future forecasting of banana prices.
+
+-   The ARIMA(3,1,2) model provides the best balance between fit and simplicity.
+-   It will be used for future forecasting of banana prices.
 
 ```{r}
 library(forecast)
@@ -643,23 +649,27 @@ autoplot(forecast_plot_data, series = "Observed") +
 cat("Forecast Results for the Next 12 Months:\n")
 print(forecast_original)
 ```
+
 ### Forecast Results and Visualization
 
-- **Model Used**: The final chosen model is ARIMA(3,1,2), identified as the best fit based on AICc and residual diagnostics.
-- **Forecast Horizon**: 12 months ahead.
-- **Confidence Intervals**: The forecast includes 80% and 95% confidence intervals for uncertainty estimation.
+-   **Model Used**: The final chosen model is ARIMA(3,1,2), identified as the best fit based on AICc and residual diagnostics.
+-   **Forecast Horizon**: 12 months ahead.
+-   **Confidence Intervals**: The forecast includes 80% and 95% confidence intervals for uncertainty estimation.
 
 #### Key Observations:
-1. The forecast follows the recent trends in banana prices, showing slight stabilization after recent fluctuations.
-2. **Uncertainty**: Confidence intervals widen over time, indicating higher uncertainty in predictions further into the future.
-3. The model is suitable for **short-term forecasting (3-6 months)** due to the increasing uncertainty beyond this range.
+
+1.  The forecast follows the recent trends in banana prices, showing slight stabilization after recent fluctuations.
+2.  **Uncertainty**: Confidence intervals widen over time, indicating higher uncertainty in predictions further into the future.
+3.  The model is suitable for **short-term forecasting (3-6 months)** due to the increasing uncertainty beyond this range.
 
 #### Use Case:
+
 This forecast can help in planning short-term pricing strategies, supply chain adjustments, or other decisions requiring insights into future banana price trends.
 
 # Mini Project in R: #3 Comparing ARIMA, ETS and other forecasting methods
 
 ## 1. TSLM Model
+
 ```{r}
 library(forecast)
 library(ggplot2)
@@ -708,28 +718,27 @@ autoplot(banana_ts_transformed) +
 cat("\nForecast Results for the Next 12 Months:\n")
 print(forecast_results)
 ```
+
 ### Harmonic Regression Results Summary
 
-1. **Model Selection**:
-   - Harmonic regression was tested with \( K = 1, 2, 3 \).
-   - Based on the AIC criterion, \( K = 2 \) was chosen as the optimal number of Fourier terms.
+1.  **Model Selection**:
+    -   Harmonic regression was tested with ( K = 1, 2, 3 ).
+    -   Based on the AIC criterion, ( K = 2 ) was chosen as the optimal number of Fourier terms.
+2.  **Final Model**:
+    -   The final model incorporates Fourier terms with ( K = 2 ) and a linear trend.
+    -   Key statistics:
+        -   Adjusted ( R\^2 ): **0.8845**
+        -   Residual Standard Error: **0.3372**
+        -   Significant predictors: Fourier terms (S1-12, C1-12) and trend.
+3.  **Forecast Performance**:
+    -   The fitted values (blue line) align closely with the observed data.
+    -   The out-of-sample forecast (red line) provides reasonable predictions for future values.
+4.  **Conclusion**:
+    -   The harmonic regression model with ( K = 2 ) balances simplicity and fit.
+    -   The model is effective for capturing trends and cyclic patterns in banana prices.
 
-2. **Final Model**:
-   - The final model incorporates Fourier terms with \( K = 2 \) and a linear trend.
-   - Key statistics:
-     - Adjusted \( R^2 \): **0.8845**
-     - Residual Standard Error: **0.3372**
-     - Significant predictors: Fourier terms (S1-12, C1-12) and trend.
-
-3. **Forecast Performance**:
-   - The fitted values (blue line) align closely with the observed data.
-   - The out-of-sample forecast (red line) provides reasonable predictions for future values.
-
-4. **Conclusion**:
-   - The harmonic regression model with \( K = 2 \) balances simplicity and fit.
-   - The model is effective for capturing trends and cyclic patterns in banana prices.
-   
 ## 2. ETS Model
+
 ```{r}
 # Step 1: Automatically fit the best ETS model (additive components only)
 auto_ets <- ets(banana_ts_transformed, model = "ZZA")  # Automatically chooses error, damped trend, additive seasonality
@@ -773,30 +782,30 @@ print(ets_forecast)
 # Step 7: Residual Diagnostics for the Selected Model
 checkresiduals(best_ets)
 ```
+
 ## Comments on ETS Models
 
-1. **Automatic ETS Model**:
-   - The chosen ETS(A,N,A) model was fitted using the `ets()` function.
-   - The smoothing parameters, initial states, and residual error measures were computed.
-   - AIC, AICc, and BIC values indicate good model fit.
-   - Residual diagnostics show well-distributed residuals but some autocorrelation remains as seen in the Ljung-Box test.
-
-2. **Comparison of Alternative ETS Models**:
-   - Multiple ETS specifications (ETS(A,A,A), ETS(A,A,N), ETS(A,N,N)) were tested for comparison.
-   - AIC comparison shows that the automatic ETS(A,N,A) has the best performance.
-
-3. **Forecast Results**:
-   - The forecast for the next 12 months was computed using the automatic ETS model.
-   - Forecast intervals were displayed, showing higher uncertainty for long-term predictions.
-
-4. **Residual Analysis**:
-   - Residual diagnostics plots (ACF, PACF, and histogram) indicate that residuals are reasonably normal.
-   - However, some autocorrelation is present, as seen in the Ljung-Box test (p-value < 0.05).
+1.  **Automatic ETS Model**:
+    -   The chosen ETS(A,N,A) model was fitted using the `ets()` function.
+    -   The smoothing parameters, initial states, and residual error measures were computed.
+    -   AIC, AICc, and BIC values indicate good model fit.
+    -   Residual diagnostics show well-distributed residuals but some autocorrelation remains as seen in the Ljung-Box test.
+2.  **Comparison of Alternative ETS Models**:
+    -   Multiple ETS specifications (ETS(A,A,A), ETS(A,A,N), ETS(A,N,N)) were tested for comparison.
+    -   AIC comparison shows that the automatic ETS(A,N,A) has the best performance.
+3.  **Forecast Results**:
+    -   The forecast for the next 12 months was computed using the automatic ETS model.
+    -   Forecast intervals were displayed, showing higher uncertainty for long-term predictions.
+4.  **Residual Analysis**:
+    -   Residual diagnostics plots (ACF, PACF, and histogram) indicate that residuals are reasonably normal.
+    -   However, some autocorrelation is present, as seen in the Ljung-Box test (p-value \< 0.05).
 
 ### Conclusion:
+
 The ETS(A,N,A) model provides reliable short-term forecasts for banana prices but exhibits minor autocorrelation in residuals, suggesting room for improvement.
 
 ## 3. Models Comparing
+
 ```{r}
 # Load necessary libraries
 library(forecast)
@@ -865,15 +874,180 @@ print(ets_accuracy)
 cat("\nAccuracy for TSLM Model:\n")
 print(tslm_accuracy)
 ```
+
 ### Conclusions on Model Performance: ARIMA vs ETS vs TSLM
 
-The **ARIMA model** is the best-performing option for forecasting banana prices. It consistently achieves lower error metrics on both the training and test datasets, indicating its robustness and accuracy in capturing the underlying patterns and trends in the data. 
+The **ARIMA model** is the best-performing option for forecasting banana prices. It consistently achieves lower error metrics on both the training and test datasets, indicating its robustness and accuracy in capturing the underlying patterns and trends in the data.
 
 The **ETS model** is a reasonable alternative but underperforms slightly compared to ARIMA, particularly on the test set. This suggests it may not handle future variations as effectively.
 
 The **TSLM model** has the weakest performance, showing higher errors overall, likely due to its limitations in capturing complex dynamics in the time series.
 
 ### Final Recommendation:
+
 The ARIMA model should be used for forecasting banana prices due to its superior accuracy and reliable performance on both past and future data.
 
-   
+#Mini Project in R| Part 4: estimating GARCH model
+
+```{r}
+
+# Compute Log Prices with e number as a base and Returns 
+banana_tsibble <- banana_tsibble |>
+  mutate(log_prices = log(`Banana, US`)) |>
+  mutate(Return = 100 * difference(log_prices, lag = 1))  # Use difference() instead of lag()
+
+# Check result
+head(banana_tsibble)
+
+banana_tsibble |>
+  autoplot(Return) +
+  labs(title = "Log Returns of Banana Prices",
+       x = "Date",
+       y = "Return (%)") +
+  theme_minimal()
+
+library(fpp3)
+
+# Ensure data is sorted correctly
+banana_tsibble <- banana_tsibble |>
+  arrange(Date)
+
+# Compute log returns
+banana_returns <- banana_tsibble |>
+  mutate(log_prices = log(`Banana, US`)) |>
+  mutate(Return = 100 * difference(log_prices, lag = 1)) |>
+  drop_na()  # Remove NA from the first row
+
+# View the dataset with returns
+print(banana_returns)
+
+```
+
+```{r}
+library(fpp3)
+# Fit different ARMA models
+arma_models <- banana_returns |>
+  model(
+    ARMA_1_1 = ARIMA(Return ~ pdq(1,0,1)),
+    ARMA_2_1 = ARIMA(Return ~ pdq(2,0,1)),
+    ARMA_1_2 = ARIMA(Return ~ pdq(1,0,2)),
+    ARMA_2_2 = ARIMA(Return ~ pdq(2,0,2))
+  )
+
+# Compare models using AIC
+arma_models |>
+  glance() |>
+  select(.model, AIC) |>
+  arrange(AIC)  # Choose model with the lowest AIC
+
+best_arma <- arma_models |> select(ARMA_1_1)  # Replace with best model
+
+# Check residuals
+best_arma |> gg_tsresiduals()
+
+# Perform Ljung-Box test for autocorrelation
+best_arma |>
+  augment() |>
+  features(.resid, ljung_box, lag = 24, dof = 2)
+
+```
+
+
+## Check for ARCH effect
+
+```{r}
+# Plot squared residuals to check volatility clustering
+best_arma |> augment() |>
+  mutate(Squared_Residuals = .resid^2) |>
+  autoplot(Squared_Residuals)
+
+```
+## Performing the ARCH test
+```{r}
+
+# Extract residuals
+arma_residuals <- best_arma |> augment() |> pull(.resid)
+# Perform ARCH test
+arch_test <- ArchTest(arma_residuals, lags = 10)
+
+# Print results
+print(arch_test)
+
+
+
+
+```
+
+as the p-value is below 0,05 it indicates that ARCH effect is present. Heteroscedasticity is present and therefore we have to proceed with fitting GARCH model
+
+DMYTRO AND OTHERS PLEASE DOBLE CHECK RESULTS!
+
+```{r}
+library(rugarch)
+# Define GARCH(1,1) model specification
+garch_spec <- ugarchspec(
+  variance.model = list(model = "sGARCH", garchOrder = c(3,1)),
+  mean.model = list(armaOrder = c(1,1), include.mean = TRUE),
+  distribution.model = "std"
+)
+
+# Fit the GARCH model
+garch_fit <- ugarchfit(spec = garch_spec, data = banana_returns$Return)
+
+# Print model summary
+print(garch_fit)
+# Plot standardized residuals
+plot(garch_fit, which = 8)  
+
+# Plot conditional volatility
+plot(garch_fit, which = 3)
+```
+
+PLEASE FIND HOW THE GROUP NUMBER (20,30,40,50 etc) AFFECT THE MODEL FIT
+## Forecast ARMA model
+
+```{r}
+# Forecast next 10 periods
+arma_forecast <- best_arma |> forecast(h = 10)
+
+# Plot ARMA forecast
+autoplot(arma_forecast) + autolayer(banana_returns, Return)
+
+```
+
+
+
+## Forecast the GARCH model
+
+```{r}
+# Forecast next 20 periods
+garch_forecast <- ugarchforecast(garch_fit, n.ahead = 10)
+
+# Print forecast details
+print(garch_forecast)
+
+# Extract volatility forecast
+volatility_forecast <- sigma(garch_forecast)
+
+# Extract return forecast
+return_forecast <- fitted(garch_forecast)
+
+plot(volatility_forecast, type = "l", col = "blue",
+     main = "GARCH(1,1) Volatility Forecast",
+     xlab = "Time", ylab = "Volatility")
+
+plot(return_forecast, type = "l", col = "red",
+     main = "GARCH(1,1) Return Forecast",
+     xlab = "Time", ylab = "Return")
+
+```
+
+## Performing ARCH test on residuals
+
+```{r}
+# Perform ARCH LM test on residuals
+library(FinTS)
+arch_test <- ArchTest(residuals(garch_fit), lags = 10)
+print(arch_test)
+
+```
