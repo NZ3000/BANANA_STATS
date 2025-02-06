@@ -885,9 +885,10 @@ The **TSLM model** has the weakest performance, showing higher errors overall, l
 
 The ARIMA model should be used for forecasting banana prices due to its superior accuracy and reliable performance on both past and future data.
 
-#Mini Project in R| Part 4: estimating GARCH model
+# Mini Project in R| Part 4: estimating GARCH model
 
-```{r}
+## Creating the log-returns
+```{r warning=FALSE}
 
 # Compute Log Prices with e number as a base and Returns 
 banana_tsibble <- banana_tsibble |>
@@ -920,7 +921,14 @@ banana_returns <- banana_tsibble |>
 print(banana_returns)
 
 ```
+Brief interpretation:
 
+The log prices remain relatively stable in early periods, indicating minimal fluctuations in banana prices.
+The log returns plot shows clear periods of increased volatility, suggesting phases of high price uncertainty.
+There are noticeable spikes in returns, which could indicate external shocks or structural changes in the market.
+The presence of volatility clustering—periods of high and low volatility occurring together—suggests that a GARCH model may be appropriate for capturing these dynamics.
+
+## Fitting ARMA models
 ```{r}
 library(fpp3)
 library(fable)
@@ -950,9 +958,9 @@ best_arma |>
   features(.resid, ljung_box, lag = 24, dof = 2)
 
 ```
+The ARMA(1,1) model had the lowest AIC, making it the best fit among tested models. Residual diagnostics showed signs of volatility clustering, and the Ljung-Box test (p ≈ 0.00015) indicated significant autocorrelation. This suggests the model does not fully capture time-dependent patterns, particularly conditional heteroskedasticity, warranting further exploration of ARCH/GARCH models.
 
-
-## Check for ARCH effect
+## ARCH effect
 
 ```{r}
 # Plot squared residuals to check volatility clustering
@@ -961,7 +969,6 @@ best_arma |> augment() |>
   autoplot(Squared_Residuals)
 
 ```
-## Performing the ARCH test
 ```{r}
 
 # Extract residuals
@@ -976,12 +983,10 @@ print(arch_test)
 
 
 ```
+The squared residuals plot shows clear periods of increased volatility, suggesting volatility clustering. The ARCH LM test strongly rejects the null hypothesis (p < 2.2e-16), confirming the presence of autoregressive conditional heteroskedasticity (ARCH effects). This indicates that an ARCH/GARCH model is needed to properly capture the time-varying variance in banana price returns.
 
-as the p-value is below 0,05 it indicates that ARCH effect is present. Heteroscedasticity is present and therefore we have to proceed with fitting GARCH model
-
-DMYTRO AND OTHERS PLEASE DOBLE CHECK RESULTS!
-
-```{r}
+## GARCH models estimation
+```{r message=FALSE}
 library(rugarch)
 # Define GARCH(1,1) model specification
 garch_spec <- ugarchspec(
@@ -1002,9 +1007,19 @@ plot(garch_fit, which = 8)
 plot(garch_fit, which = 3)
 ```
 
-PLEASE FIND HOW THE GROUP NUMBER (20,30,40,50 etc) AFFECT THE MODEL FIT
+We estimated a GARCH(3,1)-ARMA(1,1) model to capture the volatility dynamics in banana price returns. The model selection was based on incorporating both past shocks (ARCH effects) and past volatility (GARCH effects) while assuming a Student-t distribution to account for fat tails.
+
+Key Findings:
+Volatility Clustering: The conditional standard deviation plot confirms periods of high and low volatility clustering.
+Persistence in Volatility: The GARCH term (β₁ = 0.906, p < 0.01) indicates strong persistence, meaning that once volatility rises, it remains elevated for some time.
+Heavy Tails in Residuals: The empirical density of standardized residuals aligns better with the t-distribution than a normal distribution. That confirms the presence of extreme price movements.
+No Significant ARCH Effects Remain: The ARCH LM test (p > 0.7) suggests that the model adequately captures heteroskedasticity.
+Autocorrelation in Residuals: The Ljung-Box test (p < 0.01 for some lags) indicates minor remaining dependencies, suggesting potential refinements in the mean model.
+No Asymmetry in Volatility: The sign bias test (p > 0.2) shows that positive and negative shocks have similar impacts on future volatility.
+
 ## Forecast ARMA model
 
+We perform in-sample forecasting using the ARMA model for return predictions and the GARCH model for volatility estimation.
 ```{r}
 # Forecast next 10 periods
 arma_forecast <- best_arma |> forecast(h = 10)
@@ -1014,10 +1029,10 @@ autoplot(arma_forecast) + autolayer(banana_returns, Return)
 
 ```
 
-
+The ARMA(1,1) model is used to predict returns for the next 10 periods.
+The forecast plot shows that predicted values align with historical data, with increasing uncertainty over time.
 
 ## Forecast the GARCH model
-
 ```{r}
 # Forecast next 20 periods
 garch_forecast <- ugarchforecast(garch_fit, n.ahead = 10)
@@ -1040,6 +1055,9 @@ plot(return_forecast, type = "l", col = "red",
      xlab = "Time", ylab = "Return")
 
 ```
+The GARCH(1,1) model provides forecasts for both returns and volatility.
+Return forecasts exhibit mean-reverting behavior, stabilizing over time.
+Volatility forecasts indicate persistent fluctuations, suggesting continued market uncertainty.
 
 ## Performing ARCH test on residuals
 
@@ -1050,3 +1068,6 @@ arch_test <- ArchTest(residuals(garch_fit), lags = 10)
 print(arch_test)
 
 ```
+The ARCH LM test indicates that our GARCH(3,1) model does not fully capture all volatility clustering, as the test strongly rejects the null hypothesis of no ARCH effects (Chi-squared = 119.3, p-value < 2.2e-16). This suggests that some autoregressive conditional heteroskedasticity remains unexplained.
+
+Despite this limitation, the model still provides useful insights into the volatility dynamics of banana price returns. However, for a more refined approach, future work could explore alternative GARCH specifications
