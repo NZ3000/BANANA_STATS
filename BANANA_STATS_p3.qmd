@@ -888,6 +888,7 @@ The ARIMA model should be used for forecasting banana prices due to its superior
 # Mini Project in R| Part 4: estimating GARCH model
 
 ## Creating the log-returns
+
 ```{r warning=FALSE}
 
 # Compute Log Prices with e number as a base and Returns 
@@ -929,6 +930,15 @@ There are noticeable spikes in returns, which could indicate external shocks or 
 The presence of volatility clustering—periods of high and low volatility occurring together—suggests that a GARCH model may be appropriate for capturing these dynamics.
 
 ## Fitting ARMA models
+
+The models we tested:
+
+ARMA(1,1): Uses one past value (AR(1)) and one past shock (MA(1)). It accounts for short-term dependencies in both price levels and shocks.
+ARMA(2,1): Expands the autoregressive component to two past values (AR(2)), capturing longer memory effects in price behavior, while still using one past shock.
+ARMA(1,2): Keeps the autoregressive component small (AR(1)) but allows for two past shocks (MA(2)), which can help account for more complex error structures.
+ARMA(2,2): Uses two past values and two past shocks, making it a more flexible model that can capture both medium-term dependencies and more intricate noise patterns.
+Model Comparison:
+
 ```{r}
 library(fpp3)
 library(fable)
@@ -1047,11 +1057,11 @@ volatility_forecast <- sigma(garch_forecast)
 return_forecast <- fitted(garch_forecast)
 
 plot(volatility_forecast, type = "l", col = "blue",
-     main = "GARCH(1,1) Volatility Forecast",
+     main = "GARCH(3,1) Volatility Forecast",
      xlab = "Time", ylab = "Volatility")
 
 plot(return_forecast, type = "l", col = "red",
-     main = "GARCH(1,1) Return Forecast",
+     main = "GARCH(3,1) Return Forecast",
      xlab = "Time", ylab = "Return")
 
 ```
