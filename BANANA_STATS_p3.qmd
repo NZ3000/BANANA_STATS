@@ -53,8 +53,6 @@ options(repos = c(CRAN = "https://cran.rstudio.com"))
 # install.packages("rugarch")
 
 
-
-
 library(ggplot2)
 library(ggthemes)
 library(stargazer)
@@ -85,7 +83,7 @@ library(tseries)
 library(MuMIn)
 library(cowplot)
 library(FinTS)
-library(rugarch)
+
 
 invisible(Sys.setlocale("LC_TIME", "en_US.UTF-8")) # Set months in English without output
 ```
@@ -925,13 +923,14 @@ print(banana_returns)
 
 ```{r}
 library(fpp3)
+library(fable)
 # Fit different ARMA models
 arma_models <- banana_returns |>
   model(
-    ARMA_1_1 = ARIMA(Return ~ pdq(1,0,1)),
-    ARMA_2_1 = ARIMA(Return ~ pdq(2,0,1)),
-    ARMA_1_2 = ARIMA(Return ~ pdq(1,0,2)),
-    ARMA_2_2 = ARIMA(Return ~ pdq(2,0,2))
+    ARMA_1_1 = fable::ARIMA(Return ~ pdq(1,0,1)),
+    ARMA_2_1 = fable::ARIMA(Return ~ pdq(2,0,1)),
+    ARMA_1_2 = fable::ARIMA(Return ~ pdq(1,0,2)),
+    ARMA_2_2 = fable::ARIMA(Return ~ pdq(2,0,2))
   )
 
 # Compare models using AIC
